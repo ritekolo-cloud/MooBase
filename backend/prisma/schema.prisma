@@ -1,0 +1,153 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  manager
+  attendant
+}
+
+enum CattleStatus {
+  healthy
+  sick
+  sold
+  dead
+  vaccinated
+  lactating
+}
+
+model User {
+  id           String             @id @default(uuid())
+  name         String
+  email        String             @unique // acts as username/email
+  passwordHash String             @map("password_hash")
+  role         Role               @default(attendant)
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+  refreshTokens RefreshToken[]
+  syncItems    OfflineSyncQueue[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique @map("token_hash")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Cattle {
+  id                 String              @id // Custom string like C001, C002 or UUID
+  tagNumber          String              @unique @map("tag_number")
+  name               String
+  breed              String
+  age                Int
+  gender             String
+  status             CattleStatus        @default(healthy)
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  healthRecords      HealthRecord[]
+  vaccinationRecords VaccinationRecord[]
+  milkProductions    MilkProduction[]
+  breedingRecords    BreedingRecord[]    @relation("CattleBreeding")
+  partnerBreedings   BreedingRecord[]    @relation("PartnerBreeding")
+  feedingRecords     FeedingRecord[]
+
+  @@map("cattle")
+}
+
+model HealthRecord {
+  id          String   @id @default(uuid())
+  cattleId    String   @map("cattle_id")
+  cattle      Cattle   @relation(fields: [cattleId], references: [id], onDelete: Cascade)
+  description String
+  treatment   String
+  vetName     String   @map("vet_name")
+  date        DateTime
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("health_records")
+}
+
+model VaccinationRecord {
+  id               String   @id @default(uuid())
+  cattleId         String   @map("cattle_id")
+  cattle           Cattle   @relation(fields: [cattleId], references: [id], onDelete: Cascade)
+  vaccineName      String   @map("vaccine_name")
+  dateAdministered DateTime @map("date_administered")
+  nextDueDate      DateTime @map("next_due_date")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("vaccination_records")
+}
+
+model MilkProduction {
+  id        String   @id @default(uuid())
+  cattleId  String   @map("cattle_id")
+  cattle    Cattle   @relation(fields: [cattleId], references: [id], onDelete: Cascade)
+  quantity  Float    // quantity in liters
+  date      DateTime
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("milk_production")
+}
+
+model BreedingRecord {
+  id              String   @id @default(uuid())
+  cattleId        String   @map("cattle_id")
+  cattle          Cattle   @relation("CattleBreeding", fields: [cattleId], references: [id], onDelete: Cascade)
+  partnerCattleId String?  @map("partner_cattle_id")
+  partnerCattle   Cattle?  @relation("PartnerBreeding", fields: [partnerCattleId], references: [id], onDelete: SetNull)
+  status          String   // e.g. success, pending, failed
+  date            DateTime
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("breeding_records")
+}
+
+model FeedingRecord {
+  id        String   @id @default(uuid())
+  cattleId  String   @map("cattle_id")
+  cattle    Cattle   @relation(fields: [cattleId], references: [id], onDelete: Cascade)
+  notes     String
+  date      DateTime
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("feeding_records")
+}
+
+model OfflineSyncQueue {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actionType String   @map("action_type") // create, update, delete
+  payload    Json
+  status     String   @default("pending") // pending, synced, failed
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("offline_sync_queue")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action      String   // LOGIN, CREATE_RECORD, etc.
+  description String
+  timestamp   DateTime @default(now())
+
+  @@map("audit_logs")
+}

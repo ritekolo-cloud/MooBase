@@ -1,0 +1,712 @@
+{
+  "info": {
+    "_postman_id": "8747a330-ed18-45f1-bfab-3d6487cf1a82",
+    "name": "MooBase Cattle Records Management System API",
+    "description": "API collection for testing MooBase backend endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth Module",
+      "item": [
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin@moobase.com\",\n  \"password\": \"Password123\",\n  \"loginMethod\": \"username\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Register User (Manager Only)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ssekamatte John\",\n  \"email\": \"john@moobase.com\",\n  \"password\": \"AttendantPassword123\",\n  \"role\": \"attendant\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "Check Current User (Me)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cattle Module",
+      "item": [
+        {
+          "name": "Get All Cattle",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/cattle",
+              "host": ["{{baseUrl}}"],
+              "path": ["cattle"]
+            }
+          }
+        },
+        {
+          "name": "Get Cattle By ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/cattle/C001",
+              "host": ["{{baseUrl}}"],
+              "path": ["cattle", "C001"]
+            }
+          }
+        },
+        {
+          "name": "Create Cattle Record",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"C006\",\n  \"tagNumber\": \"TAG-006\",\n  \"name\": \"Zola\",\n  \"breed\": \"Ankole\",\n  \"age\": 1,\n  \"gender\": \"female\",\n  \"status\": \"healthy\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cattle",
+              "host": ["{{baseUrl}}"],
+              "path": ["cattle"]
+            }
+          }
+        },
+        {
+          "name": "Update Cattle Record",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Zola updated\",\n  \"status\": \"lactating\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cattle/C006",
+              "host": ["{{baseUrl}}"],
+              "path": ["cattle", "C006"]
+            }
+          }
+        },
+        {
+          "name": "Delete Cattle Record (Manager Only)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/cattle/C006",
+              "host": ["{{baseUrl}}"],
+              "path": ["cattle", "C006"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Record Entries Module",
+      "item": [
+        {
+          "name": "Record Health Activity",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleId\": \"C001\",\n  \"description\": \"Treated for minor hoof injury\",\n  \"treatment\": \"Antiseptic dressing and rest\",\n  \"vetName\": \"Dr. Mukasa\",\n  \"date\": \"2026-06-08T12:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Record Vaccination",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleId\": \"C001\",\n  \"vaccineName\": \"East Coast Fever\",\n  \"dateAdministered\": \"2026-06-08T12:00:00.000Z\",\n  \"nextDueDate\": \"2026-12-08T12:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vaccination",
+              "host": ["{{baseUrl}}"],
+              "path": ["vaccination"]
+            }
+          }
+        },
+        {
+          "name": "Record Milk Yield",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleId\": \"C002\",\n  \"quantity\": 15.5,\n  \"date\": \"2026-06-08T12:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/milk",
+              "host": ["{{baseUrl}}"],
+              "path": ["milk"]
+            }
+          }
+        },
+        {
+          "name": "Record Breeding Event",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cattleId\": \"C002\",\n  \"partnerCattleId\": \"C003\",\n  \"status\": \"AI breeding successful\",\n  \"date\": \"2026-06-08T12:00:00.000Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/breeding",
+              "host": ["{{baseUrl}}"],
+              "path": ["breeding"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sync Module (Offline-First)",
+      "item": [
+        {
+          "name": "Push Offline Sync Queue",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"id\": \"sync_cattle_101\",\n    \"type\": \"create\",\n    \"entity\": \"cattle\",\n    \"data\": {\n      \"id\": \"C007\",\n      \"tagNumber\": \"TAG-007\",\n      \"name\": \"Chloee\",\n      \"breed\": \"Jersey\",\n      \"age\": 2,\n      \"gender\": \"female\",\n      \"status\": \"healthy\"\n    }\n  },\n  {\n    \"id\": \"sync_record_102\",\n    \"type\": \"create\",\n    \"entity\": \"record\",\n    \"data\": {\n      \"id\": \"sync_R004\",\n      \"cattleId\": \"C007\",\n      \"type\": \"milk\",\n      \"notes\": \"Morning yields\",\n      \"date\": \"2026-06-09T08:00:00.000Z\",\n      \"data\": {\n        \"liters\": 10.5\n      }\n    }\n  }\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sync/push",
+              "host": ["{{baseUrl}}"],
+              "path": ["sync", "push"]
+            }
+          }
+        },
+        {
+          "name": "Get Pending Sync Conflicts (Manager Only)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/sync/pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["sync", "pending"]
+            }
+          }
+        },
+        {
+          "name": "Resolve Sync Conflict (Manager Only)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"unresolved_sync_item_id_here\",\n  \"action\": \"dismiss\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/sync/resolve",
+              "host": ["{{baseUrl}}"],
+              "path": ["sync", "resolve"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports Module (Manager Only)",
+      "item": [
+        {
+          "name": "Dashboard Aggregation Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "summary"]
+            }
+          }
+        },
+        {
+          "name": "Milk Production Yield Chart Data",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/milk-production",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "milk-production"]
+            }
+          }
+        },
+        {
+          "name": "Health Status / Sick Cattle Log",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/health-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "health-status"]
+            }
+          }
+        },
+        {
+          "name": "Vaccination Overdue / Alerts",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/vaccination-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "vaccination-status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management Module (Manager Only)",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          }
+        },
+        {
+          "name": "Create Attendant logon",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kato David\",\n  \"email\": \"kato@moobase.com\",\n  \"password\": \"AttendantDavid123\",\n  \"role\": \"attendant\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          }
+        },
+        {
+          "name": "Update User Account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kato David Updated\",\n  \"role\": \"attendant\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/user_id_here",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "user_id_here"]
+            }
+          }
+        },
+        {
+          "name": "Delete User Account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/users/user_id_here",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "user_id_here"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "your_access_token_here",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "your_refresh_token_here",
+      "type": "string"
+    }
+  ]
+}

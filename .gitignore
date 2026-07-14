@@ -1,0 +1,43 @@
+# ───────────────────────────────────────────
+# Node / npm
+# ───────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# ───────────────────────────────────────────
+# Build outputs
+# ───────────────────────────────────────────
+dist/
+build/
+*.tsbuildinfo
+
+# ───────────────────────────────────────────
+# Environment / secrets  ← NEVER commit these
+# ───────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ───────────────────────────────────────────
+# Logs
+# ───────────────────────────────────────────
+logs/
+*.log
+
+# ───────────────────────────────────────────
+# OS / Editor artefacts
+# ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ───────────────────────────────────────────
+# Prisma
+# ───────────────────────────────────────────
+# Keep migrations & schema; ignore generated client
+backend/node_modules/

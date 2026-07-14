@@ -1,0 +1,124 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  
+  /* Mandatory Color System */
+  --background: #F9FAFB; /* Neutral gray background */
+  --foreground: #111827; /* Dark gray for body/headings */
+  
+  --card: #ffffff; /* White for cards, forms, inputs, tables */
+  --card-foreground: #111827;
+  
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  
+  --primary: #1B5E20; /* Brand green */
+  --primary-foreground: #ffffff;
+  
+  --secondary: #1E3A8A;
+  --secondary-foreground: #ffffff;
+  
+  --muted: #F3F4F6;
+  --muted-foreground: #6B7280; /* Neutral gray placeholder/caption */
+  
+  --accent: #F59E0B;
+  --accent-foreground: #ffffff;
+  
+  --destructive: #DC2626; /* Red for danger actions */
+  --destructive-foreground: #ffffff;
+  
+  --success: #16A34A;
+  --success-foreground: #ffffff;
+  
+  --border: #E5E7EB; /* Mandatory border color */
+  --input: #E5E7EB;
+  --input-background: #ffffff;
+  --switch-background: #D1D5DB;
+  
+  --ring: #1B5E20; /* Focus indicator outline */
+  
+  /* Mandatory Border Radius System */
+  --radius-btn: 10px;
+  --radius-input: 10px;
+  --radius-card: 12px;
+  --radius-dialog: 14px;
+}
+
+.dark {
+  --background: #111827;
+  --foreground: #F9FAFB;
+  --card: #1F2937;
+  --card-foreground: #F9FAFB;
+  --popover: #1F2937;
+  --popover-foreground: #F9FAFB;
+  --primary: #4ADE80;
+  --primary-foreground: #14532D;
+  --secondary: #60A5FA;
+  --secondary-foreground: #1E3A8A;
+  --muted: #374151;
+  --muted-foreground: #9CA3AF;
+  --accent: #FBBF24;
+  --accent-foreground: #78350F;
+  --destructive: #EF4444;
+  --destructive-foreground: #FEF2F2;
+  --border: #374151;
+  --input: #374151;
+  --ring: #4ADE80;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  
+  /* Mandatory radii */
+  --radius-button: var(--radius-btn);
+  --radius-input: var(--radius-input);
+  --radius-card: var(--radius-card);
+  --radius-dialog: var(--radius-dialog);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+  }
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  /* Typography configurations */
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight font-semibold text-foreground;
+  }
+}
