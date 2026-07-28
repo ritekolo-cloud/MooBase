@@ -10,7 +10,6 @@ export function SplashScreen() {
     const timer = setTimeout(() => {
       const user = storage.getUser();
       if (user) {
-        // Redirect to appropriate dashboard based on role
         if (user.role === 'manager') {
           navigate('/manager/dashboard');
         } else {
@@ -19,17 +18,17 @@ export function SplashScreen() {
       } else {
         navigate('/login');
       }
-    }, 2500);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 font-sans">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 font-sans relative">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
         className="text-center max-w-[400px]"
       >
         <div className="mb-6">
@@ -61,32 +60,27 @@ export function SplashScreen() {
             </svg>
           </motion.div>
           <h1 className="text-[36px] font-bold text-foreground tracking-tight leading-tight mb-2">MooBase</h1>
-          <p className="text-[16px] text-muted-foreground">Smart Cattle Records for Smart Farming</p>
+          <p className="text-[16px] text-muted-foreground mb-6">Smart Cattle Records for Smart Farming</p>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.3 }}
-          className="w-48 h-[6px] bg-muted rounded-full overflow-hidden mx-auto border border-[#E5E7EB]"
+        <button
+          onClick={() => {
+            const user = storage.getUser();
+            if (user) {
+              navigate(user.role === 'manager' ? '/manager/dashboard' : '/attendant/dashboard');
+            } else {
+              navigate('/login');
+            }
+          }}
+          className="h-[48px] px-8 bg-[#1B5E20] text-white rounded-[10px] font-semibold text-[15px] hover:bg-[#1B5E20]/90 transition-all duration-150 ease-out shadow-[0_6px_18px_rgba(27,94,32,0.15)] active:scale-98"
         >
-          <motion.div
-            initial={{ x: '-100%' }}
-            animate={{ x: '100%' }}
-            transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-            className="h-full w-1/2 bg-[#1B5E20] rounded-full"
-          />
-        </motion.div>
+          Sign In to MooBase
+        </button>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6, duration: 0.5 }}
-        className="absolute bottom-8 text-muted-foreground text-[14px] font-medium"
-      >
+      <div className="absolute bottom-8 text-muted-foreground text-[14px] font-medium">
         v1.0.0 • Made for Uganda Farms
-      </motion.div>
+      </div>
     </div>
   );
 }
