@@ -55,10 +55,10 @@ export function ReportsScreen() {
   };
 
   const kpis = [
-    { label: 'Total Cattle', value: cattle.length, icon: Users },
-    { label: 'Total Records', value: records.length, icon: FileText },
-    { label: 'Vaccinations', value: records.filter((r) => r.type === 'vaccination').length, icon: Syringe },
-    { label: 'Health Alerts', value: cattle.filter((c) => c.status === 'sick').length, icon: AlertCircle, danger: true },
+    { label: 'Total Cattle', value: cattle.length, icon: Users, onClick: () => navigate('/cattle') },
+    { label: 'Total Records', value: records.length, icon: FileText, onClick: () => navigate('/cattle') },
+    { label: 'Vaccinations', value: records.filter((r) => r.type === 'vaccination').length, icon: Syringe, onClick: () => navigate('/cattle', { state: { filter: 'vaccinated' } }) },
+    { label: 'Health Alerts', value: cattle.filter((c) => c.status === 'sick').length, icon: AlertCircle, danger: true, onClick: () => navigate('/cattle', { state: { filter: 'sick' } }) },
   ];
 
   return (
@@ -96,19 +96,20 @@ export function ReportsScreen() {
             transition={{ duration: 0.15, ease: 'easeOut' }}
             className="grid grid-cols-2 md:grid-cols-4 gap-6"
           >
-            {kpis.map((kpi, index) => {
+            {kpis.map((kpi) => {
               const Icon = kpi.icon;
               return (
-                <div
+                <button
                   key={kpi.label}
-                  className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] hover:border-[#1B5E20]/30 transition-all duration-150 ease-out"
+                  onClick={kpi.onClick}
+                  className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] hover:border-[#1B5E20]/30 hover:bg-muted/30 transition-all duration-150 ease-out text-left cursor-pointer group"
                 >
                   <div className="flex items-center gap-2 mb-3">
                     <Icon className={`w-[22px] h-[22px] ${kpi.danger ? 'text-destructive' : 'text-muted-foreground'}`} />
                     <span className="text-[14px] font-medium text-muted-foreground">{kpi.label}</span>
                   </div>
                   <p className="text-[36px] font-bold text-foreground leading-none">{kpi.value}</p>
-                </div>
+                </button>
               );
             })}
           </motion.div>

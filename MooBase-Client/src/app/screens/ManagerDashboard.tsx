@@ -9,6 +9,7 @@ import {
   BellRing,
   Plus,
   Settings,
+  Beef,
 } from 'lucide-react';
 import { storage } from '../utils/storage';
 import { useEffect, useState } from 'react';
@@ -70,31 +71,35 @@ export function ManagerDashboard() {
             Farm Summary
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <motion.div
+            <motion.button
+              onClick={() => navigate('/cattle')}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] hover:border-[#1B5E20]/30 transition-all duration-150 ease-out"
+              className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] hover:border-[#1B5E20]/30 hover:bg-muted/30 transition-all duration-150 ease-out text-left cursor-pointer group"
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[14px] font-medium text-muted-foreground">Total Cattle</span>
                 <Users className="w-[22px] h-[22px] text-muted-foreground" />
               </div>
               <p className="text-[36px] font-bold text-foreground leading-none">{stats.totalCattle}</p>
-            </motion.div>
+              <p className="text-[12px] text-muted-foreground mt-2 group-hover:text-primary transition-colors">View all cattle →</p>
+            </motion.button>
 
-            <motion.div
+            <motion.button
+              onClick={() => navigate('/records/add')}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.15, ease: 'easeOut', delay: 0.05 }}
-              className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] hover:border-[#1B5E20]/30 transition-all duration-150 ease-out"
+              className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] hover:border-[#1B5E20]/30 hover:bg-muted/30 transition-all duration-150 ease-out text-left cursor-pointer group"
             >
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[14px] font-medium text-muted-foreground">Today's Records</span>
                 <FileText className="w-[22px] h-[22px] text-muted-foreground" />
               </div>
               <p className="text-[36px] font-bold text-foreground leading-none">{stats.todayRecords}</p>
-            </motion.div>
+              <p className="text-[12px] text-muted-foreground mt-2 group-hover:text-primary transition-colors">Add new record →</p>
+            </motion.button>
           </div>
         </section>
 
@@ -136,13 +141,21 @@ export function ManagerDashboard() {
           <h2 className="text-[20px] font-semibold text-foreground tracking-tight">
             Quick Actions
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <button
               onClick={() => navigate('/records/add')}
               className="h-[48px] px-6 bg-primary text-primary-foreground rounded-[10px] font-medium text-[14px] hover:bg-primary/90 transition-all duration-150 ease-out flex items-center justify-center gap-2 shadow-[0_6px_18px_rgba(27,94,32,0.15)] active:scale-98"
             >
               <Plus className="w-[18px] h-[18px]" />
               <span>Add Record</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/cattle/add')}
+              className="h-[48px] px-6 bg-card border border-border text-foreground rounded-[10px] font-medium text-[14px] hover:bg-muted hover:border-primary/30 transition-all duration-150 ease-out flex items-center justify-center gap-2 active:scale-98"
+            >
+              <Beef className="w-[18px] h-[18px] text-muted-foreground" />
+              <span>Add Cattle</span>
             </button>
 
             <button

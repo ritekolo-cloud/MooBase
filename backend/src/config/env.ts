@@ -11,7 +11,7 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string(),
   JWT_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
-  CLIENT_URL: z.string().default('http://localhost:5173'),
+  CLIENT_URL: z.string().default('http://localhost:5180'),
   // Individual DB_* vars are only needed for local dev tooling.
   // Prisma connects exclusively via DATABASE_URL, so these are all optional.
   DB_HOST: z.string().default('localhost'),

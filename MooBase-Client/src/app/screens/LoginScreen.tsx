@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { motion } from 'motion/react';
-import { Eye, EyeOff, User, Smartphone, Lock } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { storage } from '../utils/storage';
 import { toast } from 'sonner';
 
@@ -10,7 +10,6 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [loginMethod, setLoginMethod] = useState<'username' | 'phone'>('username');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -34,7 +33,6 @@ export function LoginScreen() {
         body: JSON.stringify({
           username,
           password,
-          loginMethod,
         }),
       });
 
@@ -121,20 +119,6 @@ export function LoginScreen() {
     }
   };
 
-  const handleOfflineLogin = () => {
-    const existingUser = storage.getUser();
-    if (existingUser) {
-      toast.success('Logged in offline');
-      if (existingUser.role === 'manager') {
-        navigate('/manager/dashboard');
-      } else {
-        navigate('/attendant/dashboard');
-      }
-    } else {
-      toast.error('No offline credentials found');
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12 font-sans">
       <motion.div
@@ -166,44 +150,17 @@ export function LoginScreen() {
 
         {/* Login Card */}
         <div className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] space-y-6">
-          {/* Method Toggle */}
-          <div className="flex gap-1 p-1 bg-muted rounded-[10px]">
-            <button
-              type="button"
-              onClick={() => setLoginMethod('username')}
-              className={`flex-1 py-2.5 rounded-[8px] flex items-center justify-center gap-2 text-[14px] font-semibold transition-all duration-150 ease-out ${
-                loginMethod === 'username'
-                  ? 'bg-card text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <User className="w-[18px] h-[18px]" />
-              <span>Username</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setLoginMethod('phone')}
-              className={`flex-1 py-2.5 rounded-[8px] flex items-center justify-center gap-2 text-[14px] font-semibold transition-all duration-150 ease-out ${
-                loginMethod === 'phone'
-                  ? 'bg-card text-foreground shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Smartphone className="w-[18px] h-[18px]" />
-              <span>Phone</span>
-            </button>
-          </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-[14px] font-medium text-foreground mb-1.5">
-                {loginMethod === 'username' ? 'Username' : 'Phone Number'}
+                Username
               </label>
               <input
-                type={loginMethod === 'username' ? 'text' : 'tel'}
+                type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder={loginMethod === 'username' ? 'Enter username' : '+256 700 000 000'}
+                placeholder="Enter username"
                 className="w-full h-[48px] px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[16px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#1B5E20] focus:ring-1 focus:ring-[#1B5E20] transition-all duration-150 ease-out"
               />
             </div>
@@ -260,13 +217,6 @@ export function LoginScreen() {
                 )}
               </button>
 
-              <button
-                type="button"
-                onClick={handleOfflineLogin}
-                className="w-full h-[48px] bg-white border border-[#E5E7EB] text-[#111827] rounded-[10px] font-medium text-[14px] hover:bg-muted transition-colors duration-150 ease-out active:scale-98"
-              >
-                Login Offline Mode
-              </button>
             </div>
           </form>
         </div>

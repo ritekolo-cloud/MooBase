@@ -105,14 +105,28 @@ export function AttendantDashboard() {
             Today's Progress
           </h2>
           <div className="grid grid-cols-2 gap-6">
-            <div className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] hover:border-[#1B5E20]/30 transition-all duration-150 ease-out">
+            <motion.button
+              onClick={() => navigate('/records/add')}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] hover:border-[#1B5E20]/30 hover:bg-muted/30 transition-all duration-150 ease-out text-left cursor-pointer group"
+            >
               <p className="text-[14px] font-medium text-muted-foreground mb-2">Records Added</p>
               <p className="text-[36px] font-bold text-foreground leading-none">{todayRecords.length}</p>
-            </div>
-            <div className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] hover:border-[#1B5E20]/30 transition-all duration-150 ease-out">
+              <p className="text-[12px] text-muted-foreground mt-2 group-hover:text-primary transition-colors">Add record →</p>
+            </motion.button>
+            <motion.button
+              onClick={() => navigate('/cattle')}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.15, ease: 'easeOut', delay: 0.05 }}
+              className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] hover:border-[#1B5E20]/30 hover:bg-muted/30 transition-all duration-150 ease-out text-left cursor-pointer group"
+            >
               <p className="text-[14px] font-medium text-muted-foreground mb-2">Assigned Cattle</p>
               <p className="text-[36px] font-bold text-foreground leading-none">{assignedCattle.length}</p>
-            </div>
+              <p className="text-[12px] text-muted-foreground mt-2 group-hover:text-primary transition-colors">View cattle →</p>
+            </motion.button>
           </div>
         </section>
 

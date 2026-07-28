@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const syncQueueItemSchema = z.object({
   id: z.string().min(1, 'Sync item ID is required'),
   type: z.enum(['create', 'update', 'delete']),
-  entity: z.enum(['cattle', 'record']),
+  entity: z.enum(['cattle', 'record', 'user']),
   data: z.any(),
   timestamp: z.string().optional(),
 });

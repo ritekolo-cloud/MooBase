@@ -46,7 +46,7 @@ export function ForgotPasswordScreen() {
       const mockToken = 'mock_reset_token_' + Date.now();
       console.log('========================================');
       console.log(`🔑 MOCK RESET LINK FOR: ${email}`);
-      console.log(`Link: http://localhost:5173/reset-password?token=${mockToken}`);
+      console.log(`Link: http://localhost:5180/reset-password?token=${mockToken}`);
       console.log('========================================');
     } finally {
       setIsLoading(false);
