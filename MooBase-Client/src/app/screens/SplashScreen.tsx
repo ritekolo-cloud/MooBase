@@ -8,16 +8,7 @@ export function SplashScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const user = storage.getUser();
-      if (user) {
-        if (user.role === 'manager') {
-          navigate('/manager/dashboard');
-        } else {
-          navigate('/attendant/dashboard');
-        }
-      } else {
-        navigate('/login');
-      }
+      navigate('/login');
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -64,14 +55,7 @@ export function SplashScreen() {
         </div>
 
         <button
-          onClick={() => {
-            const user = storage.getUser();
-            if (user) {
-              navigate(user.role === 'manager' ? '/manager/dashboard' : '/attendant/dashboard');
-            } else {
-              navigate('/login');
-            }
-          }}
+          onClick={() => navigate('/login')}
           className="h-[48px] px-8 bg-[#1B5E20] text-white rounded-[10px] font-semibold text-[15px] hover:bg-[#1B5E20]/90 transition-all duration-150 ease-out shadow-[0_6px_18px_rgba(27,94,32,0.15)] active:scale-98"
         >
           Sign In to MooBase
