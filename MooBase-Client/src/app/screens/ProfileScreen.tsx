@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { ArrowLeft, Save, User, Shield, Phone, Mail } from 'lucide-react';
 import { storage } from '../utils/storage';
+import { API_BASE_URL } from '../config/api';
 import { toast } from 'sonner';
 
 export function ProfileScreen() {
   const navigate = useNavigate();
-  const [currentUser] = useState(() => storage.getUser());
+  const [currentUser, setCurrentUser] = useState(() => storage.getUser());
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -18,12 +19,12 @@ export function ProfileScreen() {
       navigate('/login');
       return;
     }
-    // Pre-populate fields from the users storage
+    // Pre-populate fields from the users storage or currentUser
     const allUsers = storage.getUsers();
     const userDetail = allUsers.find((u) => u.id === currentUser.id) || currentUser;
     
-    setName(userDetail.name || '');
-    setPhone(userDetail.phone || '');
+    setName(userDetail.name || currentUser.name || '');
+    setPhone(userDetail.phone || currentUser.phone || '');
   }, [currentUser, navigate]);
 
   if (!currentUser) return null;
@@ -31,7 +32,10 @@ export function ProfileScreen() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name) {
+    const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
+
+    if (!trimmedName) {
       toast.error('Please enter your name');
       return;
     }
@@ -39,42 +43,68 @@ export function ProfileScreen() {
     setIsSaving(true);
 
     try {
-      // 1. Update users collection locally
-      storage.updateUser(currentUser.id, {
-        name,
-        phone,
-      });
-
-      // 2. Update active session user cache so layout headers refresh instantly
-      const updatedSessionUser = {
-        ...currentUser,
-        name,
-        phone,
-      };
-      storage.setUser(updatedSessionUser);
-
-      // 3. Try to sync online if backend API is running
       const token = localStorage.getItem('moobase_access_token') || '';
-      const response = await fetch(`http://localhost:5000/api/users/${currentUser.id}`, {
-        method: 'PUT',
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ name, phone, role: currentUser.role, email: currentUser.username }),
+        body: JSON.stringify({
+          name: trimmedName,
+          phone: trimmedPhone || undefined,
+        }),
       });
 
+      const resData = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        throw new Error('API server returned error');
+        throw new Error(resData.message || `Server returned error (${response.status})`);
+      }
+
+      if (resData.data?.user) {
+        const persistedUser = {
+          ...currentUser,
+          ...resData.data.user,
+        };
+        // 1. Authoritative sync: Update local state and cache from backend response
+        storage.setUser(persistedUser);
+        setCurrentUser(persistedUser);
+        setName(persistedUser.name || '');
+        setPhone(persistedUser.phone || '');
       }
 
       toast.success('Profile updated successfully!');
     } catch (err: any) {
-      console.warn('Could not sync profile update directly with server. Queued for offline sync.', err);
-      toast.warning('Offline Fallback: Profile updated locally.');
+      const isNetworkError =
+        err instanceof TypeError ||
+        err.message?.includes('fetch') ||
+        err.message?.includes('NetworkError') ||
+        err.message?.includes('Failed to fetch');
+
+      if (isNetworkError) {
+        // Offline Fallback: update locally and queue for sync
+        console.warn('Could not sync profile update directly with server. Queued for offline sync.', err);
+        const offlineUser = {
+          ...currentUser,
+          name: trimmedName,
+          phone: trimmedPhone,
+        };
+        storage.setUser(offlineUser);
+        storage.updateUser(currentUser.id, {
+          name: trimmedName,
+          phone: trimmedPhone,
+        });
+        setCurrentUser(offlineUser);
+        toast.warning('Offline: Profile updated locally and queued for sync.');
+      } else {
+        // Explicit API error (e.g. 400, 401, 403, 500) - NEVER report false success
+        console.error('Profile update failed:', err);
+        toast.error(err.message || 'Failed to update profile');
+      }
     } finally {
       setIsSaving(false);
-      // Dispatch a custom event to notify other layout parts to update instantly
+      // Dispatch a custom event to notify all layout components (sidebar, header, settings)
       window.dispatchEvent(new Event('profile-updated'));
     }
   };

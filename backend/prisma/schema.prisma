@@ -25,6 +25,7 @@ model User {
   id           String             @id @default(uuid())
   name         String
   email        String             @unique // acts as username/email
+  phone        String?            // optional phone number
   passwordHash String             @map("password_hash")
   role         Role               @default(attendant)
   createdAt    DateTime           @default(now()) @map("created_at")

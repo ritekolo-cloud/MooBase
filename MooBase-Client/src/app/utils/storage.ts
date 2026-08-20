@@ -56,6 +56,18 @@ export const storage = {
   // User management
   setUser: (user: User) => {
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    // Synchronize users cache so offline lookups retrieve the latest user record
+    const allUsers = storage.getUsers();
+    const index = allUsers.findIndex(
+      (u) => u.id === user.id || (user.username && u.username.toLowerCase() === user.username.toLowerCase())
+    );
+    if (index !== -1) {
+      allUsers[index] = { ...allUsers[index], ...user };
+      storage.setUsers(allUsers);
+    } else if (allUsers.length > 0) {
+      allUsers.push(user);
+      storage.setUsers(allUsers);
+    }
   },
 
   getUser: (): User | null => {
@@ -65,6 +77,8 @@ export const storage = {
 
   clearUser: () => {
     localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem('moobase_access_token');
+    localStorage.removeItem('moobase_refresh_token');
   },
 
   // Cattle management
@@ -328,13 +342,18 @@ export const initializeMockData = () => {
     storage.setRecords(mockRecords);
   }
 
-  // Initialize users list if empty
+  // Initialize users list only if completely empty and no user exists
   if (storage.getUsers().length === 0) {
-    const mockUsers: User[] = [
-      { id: 'u001', username: 'manager@moobase.com', role: 'manager', name: 'Kabaka Ronald' },
-      { id: 'u002', username: 'attendant1@moobase.com', role: 'attendant', name: 'Mukasa John' },
-      { id: 'u003', username: 'attendant2@moobase.com', role: 'attendant', name: 'Nalule Sarah' },
-    ];
-    storage.setUsers(mockUsers);
+    const activeUser = storage.getUser();
+    if (activeUser) {
+      storage.setUsers([activeUser]);
+    } else {
+      const mockUsers: User[] = [
+        { id: 'u001', username: 'manager@moobase.com', role: 'manager', name: 'Kabaka Ronald' },
+        { id: 'u002', username: 'attendant1@moobase.com', role: 'attendant', name: 'Mukasa John' },
+        { id: 'u003', username: 'attendant2@moobase.com', role: 'attendant', name: 'Nalule Sarah' },
+      ];
+      storage.setUsers(mockUsers);
+    }
   }
 };

@@ -15,11 +15,26 @@ import userRouter from './routes/user.routes';
 
 const app = express();
 
+const allowedOrigins = [
+  env.CLIENT_URL,
+  'https://moobase-client.onrender.com',
+  'http://localhost:5180',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
 // Configure Middlewares
 app.use(helmet());
 app.use(
   cors({
-    origin: env.CLIENT_URL,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin) || env.NODE_ENV !== 'production' || origin.endsWith('.onrender.com')) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );

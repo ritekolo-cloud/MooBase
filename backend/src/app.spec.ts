@@ -34,4 +34,21 @@ describe('MooBase API Integration Tests', () => {
       expect(res.body.errors).toBeDefined();
     });
   });
+
+  describe('PATCH /api/auth/profile authentication', () => {
+    it('should return 401 when no token is provided', async () => {
+      const res = await request(app)
+        .patch('/api/auth/profile')
+        .send({ name: 'New Name' });
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('GET /api/reports/summary authentication', () => {
+    it('should return 401 when no token is provided', async () => {
+      const res = await request(app)
+        .get('/api/reports/summary');
+      expect(res.status).toBe(401);
+    });
+  });
 });

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { motion } from 'motion/react';
 import { ArrowLeft, Save, Shield, User } from 'lucide-react';
 import { storage, User as StorageUser } from '../utils/storage';
+import { API_BASE_URL } from '../config/api';
 import { toast } from 'sonner';
 
 export function AddAttendantScreen() {
@@ -69,7 +70,7 @@ export function AddAttendantScreen() {
       const payload: any = { name, email: username, role };
       if (password) payload.password = password;
 
-      fetch(`http://localhost:5000/api/users/${id}`, {
+      fetch(`${API_BASE_URL}/users/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ export function AddAttendantScreen() {
       storage.addUser(newUser);
 
       // Try to send online API request
-      fetch('http://localhost:5000/api/users', {
+      fetch(`${API_BASE_URL}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

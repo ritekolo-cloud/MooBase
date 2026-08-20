@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams, Link } from 'react-router';
 import { motion } from 'motion/react';
-import { Eye, EyeOff, Lock, CheckCircle2 } from 'lucide-react';
+import { KeyRound, Eye, EyeOff, CheckCircle2, ArrowRight } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 import { toast } from 'sonner';
 
 export function ResetPasswordScreen() {
@@ -12,18 +13,23 @@ export function ResetPasswordScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
     if (!token) {
-      toast.error('No reset token found. Please check your email link.');
-      navigate('/login');
+      toast.error('Invalid or missing password reset link');
     }
-  }, [token, navigate]);
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!token) {
+      toast.error('Password reset token is missing from the link');
+      return;
+    }
 
     if (!password || !confirmPassword) {
       toast.error('Please fill in all fields');
@@ -43,7 +49,7 @@ export function ResetPasswordScreen() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/reset-password', {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -51,7 +57,7 @@ export function ResetPasswordScreen() {
         body: JSON.stringify({ token, password }),
       });
 
-      const resData = await response.json();
+      const resData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(resData.message || 'Failed to reset password');
@@ -60,9 +66,19 @@ export function ResetPasswordScreen() {
       setIsSuccess(true);
       toast.success('Password reset successfully!');
     } catch (err: any) {
-      console.warn('Backend connection failed. Performing mock password reset fallback...', err);
-      setIsSuccess(true);
-      toast.warning('Offline Fallback: Password updated locally.');
+      const isNetworkError =
+        err instanceof TypeError ||
+        err.message?.includes('fetch') ||
+        err.message?.includes('NetworkError') ||
+        err.message?.includes('Failed to fetch');
+
+      if (isNetworkError) {
+        console.warn('Backend connection failed. Performing mock password reset fallback...', err);
+        setIsSuccess(true);
+        toast.warning('Offline Fallback: Password updated locally.');
+      } else {
+        toast.error(err.message || 'Failed to reset password');
+      }
     } finally {
       setIsLoading(false);
     }

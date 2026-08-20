@@ -6,6 +6,7 @@ import { prisma } from '../config/db';
 import { env } from '../config/env';
 import { AppError } from '../middlewares/error.middleware';
 import { loginSchema, registerSchema, forgotPasswordSchema, resetPasswordSchema, changePasswordSchema } from '../validators/auth.validator';
+import { updateProfileSchema } from '../validators/user.validator';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { EmailService } from '../services/email.service';
 
@@ -20,16 +21,16 @@ const refreshTokenExpiry = () => {
   return new Date(Date.now() + amount * multipliers[unit as keyof typeof multipliers]);
 };
 
-const signAccessToken = (user: { id: string; email: string; role: string; name: string }) =>
+const signAccessToken = (user: { id: string; email: string; role: string; name: string; phone?: string | null }) =>
   jwt.sign(
-    { id: user.id, email: user.email, role: user.role, name: user.name },
+    { id: user.id, email: user.email, role: user.role, name: user.name, phone: user.phone || undefined },
     env.JWT_SECRET,
     { expiresIn: env.JWT_EXPIRES_IN as SignOptions['expiresIn'] }
   );
 
-const signRefreshToken = async (user: { id: string; email: string; role: string; name: string }) => {
+const signRefreshToken = async (user: { id: string; email: string; role: string; name: string; phone?: string | null }) => {
   const refreshToken = jwt.sign(
-    { id: user.id, email: user.email, role: user.role, name: user.name },
+    { id: user.id, email: user.email, role: user.role, name: user.name, phone: user.phone || undefined },
     env.JWT_REFRESH_SECRET,
     { expiresIn: env.JWT_REFRESH_EXPIRES_IN as SignOptions['expiresIn'] }
   );
@@ -133,6 +134,7 @@ export class AuthController {
           name: user.name,
           username: user.email, // map email to username for client compatibility
           role: user.role,
+          phone: user.phone || undefined,
         },
       });
     } catch (error) {
@@ -240,6 +242,7 @@ export class AuthController {
           id: true,
           name: true,
           email: true,
+          phone: true,
           role: true,
           createdAt: true,
         },
@@ -257,6 +260,7 @@ export class AuthController {
             name: user.name,
             username: user.email,
             role: user.role,
+            phone: user.phone || undefined,
             createdAt: user.createdAt,
           },
         },
@@ -413,6 +417,67 @@ export class AuthController {
       res.status(200).json({
         status: 'success',
         message: 'Password has been changed successfully.',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Self-service profile update for the currently authenticated user.
+   * Only permits name and phone — role, email, and password are not changeable here.
+   */
+  static async updateProfile(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        throw new AppError('Not authenticated', 401);
+      }
+
+      const data = updateProfileSchema.parse(req.body);
+
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+      });
+
+      if (!user) {
+        throw new AppError('User not found', 404);
+      }
+
+      const dataToUpdate: { name?: string; phone?: string | null } = {};
+      if (data.name !== undefined) dataToUpdate.name = data.name;
+      if (data.phone !== undefined) dataToUpdate.phone = data.phone || null;
+
+      const updatedUser = await prisma.user.update({
+        where: { id: req.user.id },
+        data: dataToUpdate,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+        },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          userId: req.user.id,
+          action: 'UPDATE_PROFILE',
+          description: `User ${updatedUser.email} updated their profile`,
+        },
+      });
+
+      res.status(200).json({
+        status: 'success',
+        data: {
+          user: {
+            id: updatedUser.id,
+            name: updatedUser.name,
+            username: updatedUser.email,
+            role: updatedUser.role,
+            phone: updatedUser.phone || undefined,
+          },
+        },
       });
     } catch (error) {
       next(error);

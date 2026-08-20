@@ -4,6 +4,8 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { API_BASE_URL } from '../config/api';
+
 export function ForgotPasswordScreen() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -21,7 +23,7 @@ export function ForgotPasswordScreen() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -29,7 +31,7 @@ export function ForgotPasswordScreen() {
         body: JSON.stringify({ email }),
       });
 
-      const resData = await response.json();
+      const resData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(resData.message || 'Failed to request password reset');
@@ -38,16 +40,25 @@ export function ForgotPasswordScreen() {
       setIsSent(true);
       toast.success('Password reset link sent successfully!');
     } catch (err: any) {
-      console.warn('Backend connection failed. Performing mock forgot password fallback...', err);
-      // Mock fallback: generate a mock reset link and show it
-      setIsSent(true);
-      toast.warning('Mock: Password reset link generated. Check console or backend logs.');
-      
-      const mockToken = 'mock_reset_token_' + Date.now();
-      console.log('========================================');
-      console.log(`🔑 MOCK RESET LINK FOR: ${email}`);
-      console.log(`Link: http://localhost:5180/reset-password?token=${mockToken}`);
-      console.log('========================================');
+      const isNetworkError =
+        err instanceof TypeError ||
+        err.message?.includes('fetch') ||
+        err.message?.includes('NetworkError') ||
+        err.message?.includes('Failed to fetch');
+
+      if (isNetworkError) {
+        console.warn('Backend connection failed. Performing mock forgot password fallback...', err);
+        setIsSent(true);
+        toast.warning('Mock: Password reset link generated. Check console.');
+        
+        const mockToken = 'mock_reset_token_' + Date.now();
+        console.log('========================================');
+        console.log(`🔑 MOCK RESET LINK FOR: ${email}`);
+        console.log(`Link: /reset-password?token=${mockToken}`);
+        console.log('========================================');
+      } else {
+        toast.error(err.message || 'Failed to request password reset');
+      }
     } finally {
       setIsLoading(false);
     }

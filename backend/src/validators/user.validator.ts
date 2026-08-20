@@ -6,6 +6,17 @@ export const updateUserSchema = z
     email: z.string().email('A valid email address is required').optional(),
     password: z.string().min(6, 'Password must be at least 6 characters').optional(),
     role: z.enum(['manager', 'attendant']).optional(),
+    phone: z.string().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'At least one field is required',
+  });
+
+// Self-service profile update: only name and phone are permitted
+export const updateProfileSchema = z
+  .object({
+    name: z.string().min(2, 'Name must be at least 2 characters').optional(),
+    phone: z.string().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field is required',

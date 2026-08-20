@@ -12,6 +12,7 @@ import {
   Wifi,
 } from 'lucide-react';
 import { storage, SyncQueueItem } from '../utils/storage';
+import { API_BASE_URL } from '../config/api';
 
 import { toast } from 'sonner';
 
@@ -52,9 +53,15 @@ export function OfflineSyncScreen() {
     }
     setSyncQueue([...storage.getSyncQueue()]);
 
+    const token = localStorage.getItem('moobase_access_token');
+    if (!token) {
+      toast.error('You must be logged in to synchronize data with the server');
+      setIsSyncing(false);
+      return;
+    }
+
     try {
-      const token = localStorage.getItem('moobase_access_token') || 'mock_token_sync';
-      const response = await fetch('http://localhost:5000/api/sync/push', {
+      const response = await fetch(`${API_BASE_URL}/sync/push`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

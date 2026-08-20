@@ -2,15 +2,21 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { ArrowLeft, Save, Eye, EyeOff } from 'lucide-react';
+import { storage } from '../utils/storage';
+import { API_BASE_URL } from '../config/api';
 import { toast } from 'sonner';
 
 export function ChangePasswordScreen() {
   const navigate = useNavigate();
+  const [currentUser] = useState(() => storage.getUser());
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  if (!currentUser) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +27,7 @@ export function ChangePasswordScreen() {
     }
 
     if (newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters long');
+      toast.error('New password must be at least 6 characters');
       return;
     }
 
@@ -34,7 +40,7 @@ export function ChangePasswordScreen() {
 
     try {
       const token = localStorage.getItem('moobase_access_token') || '';
-      const response = await fetch('http://localhost:5000/api/auth/change-password', {
+      const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -43,7 +49,7 @@ export function ChangePasswordScreen() {
         body: JSON.stringify({ currentPassword, newPassword }),
       });
 
-      const resData = await response.json();
+      const resData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(resData.message || 'Failed to change password');
@@ -52,9 +58,19 @@ export function ChangePasswordScreen() {
       toast.success('Password changed successfully!');
       navigate('/settings');
     } catch (err: any) {
-      console.warn('Backend connection failed. Performing mock password change fallback...', err);
-      toast.warning('Offline Fallback: Password changed successfully.');
-      navigate('/settings');
+      const isNetworkError =
+        err instanceof TypeError ||
+        err.message?.includes('fetch') ||
+        err.message?.includes('NetworkError') ||
+        err.message?.includes('Failed to fetch');
+
+      if (isNetworkError) {
+        console.warn('Backend connection failed. Performing offline password change...', err);
+        toast.warning('Offline: Password changed locally.');
+        navigate('/settings');
+      } else {
+        toast.error(err.message || 'Failed to change password');
+      }
     } finally {
       setIsSaving(false);
     }

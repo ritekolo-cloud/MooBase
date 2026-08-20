@@ -14,6 +14,7 @@ export class UserController {
           id: true,
           name: true,
           email: true,
+          phone: true,
           role: true,
           createdAt: true,
         },
@@ -54,6 +55,7 @@ export class UserController {
           id: true,
           name: true,
           email: true,
+          phone: true,
           role: true,
           createdAt: true,
         },
@@ -81,7 +83,7 @@ export class UserController {
   static async update(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { name, email, password, role } = updateUserSchema.parse(req.body);
+      const { name, email, password, role, phone } = updateUserSchema.parse(req.body);
 
       const user = await prisma.user.findUnique({ where: { id } });
       if (!user) {
@@ -99,6 +101,7 @@ export class UserController {
       if (name) dataToUpdate.name = name;
       if (email) dataToUpdate.email = email;
       if (role) dataToUpdate.role = role;
+      if (phone !== undefined) dataToUpdate.phone = phone || null;
       if (password) {
         dataToUpdate.passwordHash = await bcrypt.hash(password, 10);
       }
@@ -110,6 +113,7 @@ export class UserController {
           id: true,
           name: true,
           email: true,
+          phone: true,
           role: true,
         },
       });

@@ -13,6 +13,7 @@ router.get('/me', authenticateJWT, AuthController.me);
 router.post('/forgot-password', authLimiter, AuthController.forgotPassword);
 router.post('/reset-password', authLimiter, AuthController.resetPassword);
 router.post('/change-password', authenticateJWT, AuthController.changePassword);
+router.patch('/profile', authenticateJWT, AuthController.updateProfile);
 
 
 export default router;

@@ -240,7 +240,7 @@ export class SyncService {
   }
 
   private static async syncUser(tx: SyncTransaction, item: SyncItem) {
-    const { id, username, email, name, role } = item.data || {};
+    const { id, username, email, name, role, phone } = item.data || {};
     const userEmail = email || username || id;
 
     if (!userEmail) {
@@ -269,6 +269,7 @@ export class SyncService {
         data: {
           name: userName,
           role: userRole,
+          ...(phone !== undefined ? { phone: phone || null } : {}),
         },
       });
     } else {
@@ -277,6 +278,7 @@ export class SyncService {
         data: {
           email: userEmail,
           name: userName,
+          phone: phone || null,
           passwordHash: defaultPasswordHash,
           role: userRole,
         },

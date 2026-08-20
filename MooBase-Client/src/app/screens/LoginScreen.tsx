@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { motion } from 'motion/react';
 import { Eye, EyeOff } from 'lucide-react';
-import { storage } from '../utils/storage';
+import { storage, User } from '../utils/storage';
+import { API_BASE_URL } from '../config/api';
 import { toast } from 'sonner';
 
 export function LoginScreen() {
@@ -25,7 +26,7 @@ export function LoginScreen() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,22 +37,25 @@ export function LoginScreen() {
         }),
       });
 
-      const resData = await response.json();
+      const resData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(resData.message || 'Login failed');
+        const errorMsg = resData.message || 'Invalid email/username or password';
+        setError(errorMsg);
+        toast.error(errorMsg);
+        return;
       }
 
-      // Save user details & tokens in local storage
+      // Save authoritative user details & tokens from backend response
       storage.setUser(resData.user);
       localStorage.setItem('moobase_access_token', resData.accessToken);
       localStorage.setItem('moobase_refresh_token', resData.refreshToken);
 
-      // Fetch all cattle and records from backend to seed local cache
+      // Seed local cache with cattle and records from server
       try {
-        const cattleRes = await fetch('http://localhost:5000/api/cattle', {
+        const cattleRes = await fetch(`${API_BASE_URL}/cattle`, {
           headers: {
-            'Authorization': `Bearer ${resData.accessToken}`,
+            Authorization: `Bearer ${resData.accessToken}`,
           },
         });
         if (cattleRes.ok) {
@@ -61,9 +65,9 @@ export function LoginScreen() {
 
             const allRecords: any[] = [];
             for (const animal of cattleData.data) {
-              const detailRes = await fetch(`http://localhost:5000/api/cattle/${animal.id}`, {
+              const detailRes = await fetch(`${API_BASE_URL}/cattle/${animal.id}`, {
                 headers: {
-                  'Authorization': `Bearer ${resData.accessToken}`,
+                  Authorization: `Bearer ${resData.accessToken}`,
                 },
               });
               if (detailRes.ok) {
@@ -77,42 +81,33 @@ export function LoginScreen() {
           }
         }
       } catch (fetchErr) {
-        console.warn('Failed to seed local storage cache on login:', fetchErr);
+        console.warn('Non-blocking: Failed to seed cattle cache on login:', fetchErr);
       }
 
       toast.success('Logged in successfully!');
 
-      // Redirect directly based on backend-returned role
+      // Redirect based strictly on backend-returned role
       if (resData.user.role === 'manager') {
         navigate('/manager/dashboard');
       } else {
         navigate('/attendant/dashboard');
       }
     } catch (err: any) {
-      // Graceful fallback for offline demo testing when backend is not running
-      console.warn('Backend server connection failed. Performing offline mock login fallback...', err);
-      
-      const allUsers = storage.getUsers();
-      const matchedUser = allUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
-      
-      const role = matchedUser ? matchedUser.role : (username.toLowerCase().includes('attendant') ? 'attendant' : 'manager');
-      const name = matchedUser ? matchedUser.name : (role === 'manager' ? 'Kabaka Ronald' : 'Mukasa John');
-      
-      const user = {
-        id: matchedUser ? matchedUser.id : `mock_${Date.now()}`,
-        username,
-        role,
-        name,
-      };
+      console.error('Authentication request error:', err);
+      const isNetworkError =
+        err instanceof TypeError ||
+        err.message?.includes('Failed to fetch') ||
+        err.message?.includes('NetworkError');
 
-      storage.setUser(user);
-      localStorage.setItem('moobase_access_token', 'mock_token_' + Date.now());
-      toast.warning(`Server offline. Logged in locally as ${name} (${role})`);
-      
-      if (role === 'manager') {
-        navigate('/manager/dashboard');
+      if (isNetworkError) {
+        const netMsg =
+          'Unable to connect to the authentication server. Please check your internet connection or try again later.';
+        setError(netMsg);
+        toast.error(netMsg);
       } else {
-        navigate('/attendant/dashboard');
+        const errorMsg = err.message || 'Invalid email/username or password';
+        setError(errorMsg);
+        toast.error(errorMsg);
       }
     } finally {
       setIsLoading(false);
@@ -129,7 +124,7 @@ export function LoginScreen() {
       >
         {/* Logo & Title */}
         <div className="text-center mb-8">
-          <div className="w-[48px] h-[48px] mx-auto mb-4 bg-[#1B5E20] rounded-[10px] flex items-center justify-center">
+          <div className="w-[48px] h-[48px] mx-auto mb-4 bg-[#1B5E20] rounded-[10px] flex items-center justify-center shadow-[0_6px_18px_rgba(27,94,32,0.15)]">
             <svg
               viewBox="0 0 100 100"
               className="w-7 h-7"
@@ -150,18 +145,18 @@ export function LoginScreen() {
 
         {/* Login Card */}
         <div className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] space-y-6">
-
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-[14px] font-medium text-foreground mb-1.5">
-                Username
+                Username / Email
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
+                placeholder="e.g. admin@moobase.com"
                 className="w-full h-[48px] px-4 bg-white border border-[#E5E7EB] rounded-[10px] text-[16px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#1B5E20] focus:ring-1 focus:ring-[#1B5E20] transition-all duration-150 ease-out"
+                required
               />
             </div>
 
@@ -178,7 +173,8 @@ export function LoginScreen() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
-                  className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm pr-10"
+                  className="w-full h-[48px] px-4 bg-card border border-border rounded-[10px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm pr-10"
+                  required
                 />
                 <button
                   type="button"
@@ -216,14 +212,9 @@ export function LoginScreen() {
                   'Sign In'
                 )}
               </button>
-
             </div>
           </form>
         </div>
-
-        <p className="text-center text-muted-foreground text-[14px] mt-6 font-medium">
-          Demo: Use any credentials to proceed
-        </p>
       </motion.div>
     </div>
   );
