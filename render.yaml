@@ -33,7 +33,7 @@ services:
 
       # ── CORS / Client origin ──────────────────
       - key: CLIENT_URL
-        value: https://moobase-client.onrender.com
+        value: https://moobase-client-sa4v.onrender.com
 
       # ── SMTP (set SMTP_USER & SMTP_PASS manually in Render dashboard) ──
       - key: SMTP_HOST

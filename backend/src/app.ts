@@ -19,6 +19,7 @@ const app = express();
 const allowedOrigins = [
   env.CLIENT_URL,
   'https://moobase-client.onrender.com',
+  'https://moobase-client-sa4v.onrender.com',
   'http://localhost:5180',
   'http://localhost:5173',
   'http://localhost:3000',
