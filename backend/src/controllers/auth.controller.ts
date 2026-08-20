@@ -23,14 +23,28 @@ const refreshTokenExpiry = () => {
 
 const signAccessToken = (user: { id: string; email: string; role: string; name: string; phone?: string | null }) =>
   jwt.sign(
-    { id: user.id, email: user.email, role: user.role, name: user.name, phone: user.phone || undefined },
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      phone: user.phone || undefined,
+      jti: crypto.randomUUID(),
+    },
     env.JWT_SECRET,
     { expiresIn: env.JWT_EXPIRES_IN as SignOptions['expiresIn'] }
   );
 
 const signRefreshToken = async (user: { id: string; email: string; role: string; name: string; phone?: string | null }) => {
   const refreshToken = jwt.sign(
-    { id: user.id, email: user.email, role: user.role, name: user.name, phone: user.phone || undefined },
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      phone: user.phone || undefined,
+      jti: crypto.randomUUID(),
+    },
     env.JWT_REFRESH_SECRET,
     { expiresIn: env.JWT_REFRESH_EXPIRES_IN as SignOptions['expiresIn'] }
   );
