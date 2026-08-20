@@ -52,9 +52,14 @@ app.use('/api/users', userRouter);
 // Mount records (health, vaccination, milk, breeding) directly under /api
 app.use('/api', recordRouter);
 
-// Base health check
-app.get('/health-check', (_req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date() });
+// Base health check with database connection validation
+app.get('/health-check', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ status: 'ok', database: 'connected', timestamp: new Date() });
+  } catch (err: any) {
+    res.status(200).json({ status: 'ok', database: 'disconnected', dbError: err.message, timestamp: new Date() });
+  }
 });
 
 app.use((req, _res, next) => {
