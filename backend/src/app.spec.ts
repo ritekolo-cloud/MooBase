@@ -35,20 +35,73 @@ describe('MooBase API Integration Tests', () => {
     });
   });
 
-  describe('PATCH /api/auth/profile authentication', () => {
-    it('should return 401 when no token is provided', async () => {
+  describe('Authentication Security & Persistence End-to-End', () => {
+    it('should reject unknown email with 401 Unauthorized', async () => {
       const res = await request(app)
-        .patch('/api/auth/profile')
-        .send({ name: 'New Name' });
+        .post('/api/auth/login')
+        .send({
+          username: 'nonexistent-user@example.com',
+          password: 'randompassword',
+        });
       expect(res.status).toBe(401);
+      expect(res.body.message).toContain('Invalid email/username or password');
     });
-  });
 
-  describe('GET /api/reports/summary authentication', () => {
-    it('should return 401 when no token is provided', async () => {
+    it('should reject wrong password for existing user with 401 Unauthorized', async () => {
       const res = await request(app)
-        .get('/api/reports/summary');
+        .post('/api/auth/login')
+        .send({
+          username: 'admin@moobase.com',
+          password: 'WrongPassword999!',
+        });
       expect(res.status).toBe(401);
+      expect(res.body.message).toContain('Invalid email/username or password');
+    });
+
+    it('should reject mock tokens on protected endpoints with 401 Unauthorized', async () => {
+      const res = await request(app)
+        .get('/api/reports/summary')
+        .set('Authorization', 'Bearer mock_token_arbitrary_12345');
+      expect(res.status).toBe(401);
+      expect(res.body.message).toContain('Unauthorized');
+    });
+
+    it('should authenticate valid credentials, persist profile name updates, and return persisted name on subsequent login', async () => {
+      // 1. Login with valid credentials
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({
+          username: 'admin@moobase.com',
+          password: 'Password123',
+        });
+      expect(loginRes.status).toBe(200);
+      expect(loginRes.body.accessToken).toBeDefined();
+      expect(loginRes.body.user).toBeDefined();
+
+      const token = loginRes.body.accessToken;
+      const updatedName = 'Amos Farm Manager';
+
+      // 2. Update profile name via self-service PATCH /api/auth/profile
+      const patchRes = await request(app)
+        .patch('/api/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: updatedName,
+          phone: '+256700000000',
+        });
+      expect(patchRes.status).toBe(200);
+      expect(patchRes.body.data.user.name).toBe(updatedName);
+
+      // 3. Simulate Device B / Fresh Login from another device
+      const freshLoginRes = await request(app)
+        .post('/api/auth/login')
+        .send({
+          username: 'admin@moobase.com',
+          password: 'Password123',
+        });
+      expect(freshLoginRes.status).toBe(200);
+      // The persisted name in database MUST match across devices and logins
+      expect(freshLoginRes.body.user.name).toBe(updatedName);
     });
   });
 });
