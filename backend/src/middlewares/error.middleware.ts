@@ -8,36 +8,37 @@ export class AppError extends Error {
   constructor(message: string, statusCode: number) {
     super(message);
     this.statusCode = statusCode;
-    Object.setPrototypeOf(this, new.target.prototype);
+    this.name = 'AppError';
+    Object.setPrototypeOf(this, AppError.prototype);
   }
 }
 
 export const errorHandler: ErrorRequestHandler = (
-  err: Error,
+  err: any,
   _req: Request,
   res: Response,
   _next: NextFunction
 ) => {
-  let statusCode = 500;
-  let message = 'Internal Server Error';
+  let statusCode = err.statusCode || 500;
+  let message = err.message || 'Internal Server Error';
   let errors: any = undefined;
 
-  // Custom AppError
-  if (err instanceof AppError) {
-    statusCode = err.statusCode;
+  // Custom AppError or any error with explicit status code
+  if (err instanceof AppError || err.statusCode || err.name === 'AppError') {
+    statusCode = err.statusCode || 400;
     message = err.message;
   }
   // Zod validation error
-  else if (err instanceof ZodError) {
+  else if (err instanceof ZodError || err.name === 'ZodError') {
     statusCode = 400;
     message = 'Validation Error';
-    errors = err.errors.map((e) => ({
-      field: e.path.join('.'),
+    errors = err.errors?.map((e: any) => ({
+      field: e.path?.join('.'),
       message: e.message,
     }));
   }
   // Prisma unique constraint violation or validation errors
-  else if (err instanceof Prisma.PrismaClientKnownRequestError) {
+  else if (err instanceof Prisma.PrismaClientKnownRequestError || err.code?.startsWith('P')) {
     if (err.code === 'P2002') {
       statusCode = 400;
       const target = (err.meta?.target as string[]) || [];
@@ -49,6 +50,8 @@ export const errorHandler: ErrorRequestHandler = (
       statusCode = 400;
       message = `Database Error: ${err.message}`;
     }
+  } else {
+    console.error('❌ Unhandled Server Error:', err);
   }
 
   // Development vs Production response

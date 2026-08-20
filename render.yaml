@@ -8,8 +8,8 @@ services:
     plan: free
     rootDir: backend
     # Install deps (including devDeps for tsc & prisma CLI),
-    # push the schema to the managed DB, then compile TypeScript.
-    buildCommand: npm install --include=dev && npx prisma generate && npx prisma db push --accept-data-loss && npm run build
+    # push the schema to the managed DB, seed default accounts, then compile TypeScript.
+    buildCommand: npm install --include=dev && npx prisma generate && npx prisma db push --accept-data-loss && npx ts-node prisma/seed.ts && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
