@@ -30,12 +30,17 @@ app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, postman)
+      // Allow requests with no origin (curl, Postman, mobile apps, etc.)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin) || env.NODE_ENV !== 'production' || origin.endsWith('.onrender.com')) {
-        return callback(null, true);
+      // Explicitly allow any *.onrender.com subdomain plus local dev origins
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.onrender.com') ||
+        env.NODE_ENV !== 'production'
+      ) {
+        return callback(null, origin);  // Echo the actual origin so browser accepts it
       }
-      return callback(null, true);
+      return callback(new Error(`CORS: origin ${origin} not allowed`), false);
     },
     credentials: true,
   })
