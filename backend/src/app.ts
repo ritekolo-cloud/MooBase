@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { AppError, errorHandler } from './middlewares/error.middleware';
 import { apiLimiter } from './middlewares/rateLimit.middleware';
 import { env } from './config/env';
+import { prisma } from './config/db';
 
 // Import Routers
 import authRouter from './routes/auth.routes';
