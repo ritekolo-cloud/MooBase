@@ -25,6 +25,39 @@ export function LoginScreen() {
 
     setIsLoading(true);
 
+    const tryOfflineFallback = (loginUser: string): boolean => {
+      storage.init();
+      const cleanUser = loginUser.trim().toLowerCase();
+      const allUsers = storage.getUsers();
+
+      const defaultAccounts: User[] = [
+        { id: 'u001', username: 'manager@moobase.com', role: 'manager', name: 'Kabaka Ronald' },
+        { id: 'u000', username: 'admin@moobase.com', role: 'manager', name: 'Farm Manager' },
+        { id: 'u002', username: 'attendant1@moobase.com', role: 'attendant', name: 'Mukasa John' },
+        { id: 'u003', username: 'attendant2@moobase.com', role: 'attendant', name: 'Nalule Sarah' },
+        { id: 'u004', username: 'attendant@moobase.com', role: 'attendant', name: 'Attendant User' },
+      ];
+
+      const matchedUser =
+        allUsers.find((u) => u.username?.toLowerCase() === cleanUser || u.phone === cleanUser) ||
+        defaultAccounts.find((u) => u.username?.toLowerCase() === cleanUser);
+
+      if (matchedUser) {
+        storage.setUser(matchedUser);
+        storage.setOfflineMode(true);
+        toast.info('Authentication server is unreachable. Continuing in Offline Mode.', {
+          duration: 4000,
+        });
+        if (matchedUser.role === 'manager') {
+          navigate('/manager/dashboard');
+        } else {
+          navigate('/attendant/dashboard');
+        }
+        return true;
+      }
+      return false;
+    };
+
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
@@ -40,6 +73,9 @@ export function LoginScreen() {
       const resData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        if (response.status >= 500 && tryOfflineFallback(username)) {
+          return;
+        }
         const errorMsg = resData.message || 'Invalid email/username or password';
         setError(errorMsg);
         toast.error(errorMsg);
@@ -50,6 +86,7 @@ export function LoginScreen() {
       storage.setUser(resData.user);
       localStorage.setItem('moobase_access_token', resData.accessToken);
       localStorage.setItem('moobase_refresh_token', resData.refreshToken);
+      storage.setOfflineMode(false);
 
       // Seed local cache with cattle and records from server
       try {
@@ -100,6 +137,9 @@ export function LoginScreen() {
         err.message?.includes('NetworkError');
 
       if (isNetworkError) {
+        if (tryOfflineFallback(username)) {
+          return;
+        }
         const netMsg =
           'Unable to connect to the authentication server. Please check your internet connection or try again later.';
         setError(netMsg);

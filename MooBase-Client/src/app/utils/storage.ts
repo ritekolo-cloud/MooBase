@@ -350,8 +350,10 @@ export const initializeMockData = () => {
     } else {
       const mockUsers: User[] = [
         { id: 'u001', username: 'manager@moobase.com', role: 'manager', name: 'Kabaka Ronald' },
+        { id: 'u000', username: 'admin@moobase.com', role: 'manager', name: 'Farm Manager' },
         { id: 'u002', username: 'attendant1@moobase.com', role: 'attendant', name: 'Mukasa John' },
         { id: 'u003', username: 'attendant2@moobase.com', role: 'attendant', name: 'Nalule Sarah' },
+        { id: 'u004', username: 'attendant@moobase.com', role: 'attendant', name: 'Attendant User' },
       ];
       storage.setUsers(mockUsers);
     }
