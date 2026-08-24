@@ -4,9 +4,10 @@
   "description": "Backend API for MooBase Cattle Records Management System",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
+    "postinstall": "prisma generate",
     "test": "jest --runInBand",
     "test:api": "ts-node src/test-api.ts",
     "prisma:generate": "prisma generate",
