@@ -51,7 +51,9 @@ export const errorHandler: ErrorRequestHandler = (
       message = `Database Error: ${err.message}`;
     }
   } else {
-    console.error('❌ Unhandled Server Error:', err);
+    console.error('❌ Unhandled Server Error:', err?.name, err?.message, err?.stack);
+    // Expose the real message in all envs for debuggability (stack is still hidden in prod)
+    message = err?.message || 'Internal Server Error';
   }
 
   // Development vs Production response
@@ -64,8 +66,9 @@ export const errorHandler: ErrorRequestHandler = (
     response.errors = errors;
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    response.stack = err.stack;
+  if (process.env.NODE_ENV !== 'production') {
+    response.stack = err?.stack;
+    response.detail = err?.message;
   }
 
   res.status(statusCode).json(response);
