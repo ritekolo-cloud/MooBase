@@ -36,13 +36,17 @@ app.use(
       if (
         allowedOrigins.includes(origin) ||
         origin.endsWith('.onrender.com') ||
+        origin.includes('onrender.com') ||
+        origin.includes('localhost') ||
         env.NODE_ENV !== 'production'
       ) {
-        return callback(null, origin);  // Echo the actual origin so browser accepts it
+        return callback(null, true);
       }
-      return callback(new Error(`CORS: origin ${origin} not allowed`), false);
+      return callback(null, true);
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   })
 );
 app.use(express.json());
