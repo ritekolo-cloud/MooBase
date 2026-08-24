@@ -9,29 +9,53 @@ async function main() {
   // 1. Create default users
   const passwordHash = await bcrypt.hash('Password123', 10);
 
-  const manager = await prisma.user.upsert({
-    where: { email: 'admin@moobase.com' },
-    update: {},
-    create: {
+  const defaultUsers = [
+    {
+      email: 'manager@moobase.com',
+      name: 'Kabaka Ronald',
+      passwordHash,
+      role: 'manager' as const,
+      phone: '+256700000001',
+    },
+    {
       email: 'admin@moobase.com',
       name: 'Farm Manager',
       passwordHash,
-      role: 'manager',
+      role: 'manager' as const,
+      phone: '+256700000000',
     },
-  });
-
-  const attendant = await prisma.user.upsert({
-    where: { email: 'attendant@moobase.com' },
-    update: {},
-    create: {
+    {
       email: 'attendant@moobase.com',
       name: 'Attendant User',
       passwordHash,
-      role: 'attendant',
+      role: 'attendant' as const,
+      phone: '+256700000002',
     },
-  });
+    {
+      email: 'attendant1@moobase.com',
+      name: 'Mukasa John',
+      passwordHash,
+      role: 'attendant' as const,
+      phone: '+256700000003',
+    },
+    {
+      email: 'attendant2@moobase.com',
+      name: 'Nalule Sarah',
+      passwordHash,
+      role: 'attendant' as const,
+      phone: '+256700000004',
+    },
+  ];
 
-  console.log(`👤 Seeded users:\n  - Manager: ${manager.email} (pass: Password123)\n  - Attendant: ${attendant.email} (pass: Password123)`);
+  for (const u of defaultUsers) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: { passwordHash: u.passwordHash, name: u.name, role: u.role, phone: u.phone },
+      create: u,
+    });
+  }
+
+  console.log(`👤 Seeded users:\n  - Manager: manager@moobase.com & admin@moobase.com (pass: Password123)\n  - Attendants: attendant@moobase.com, attendant1@moobase.com, attendant2@moobase.com (pass: Password123)`);
 
   // 2. Seed default Cattle matching frontend mock data
   const cattleData = [

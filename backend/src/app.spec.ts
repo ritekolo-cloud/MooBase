@@ -66,6 +66,18 @@ describe('MooBase API Integration Tests', () => {
       expect(res.body.message).toContain('Unauthorized');
     });
 
+    it('should authenticate manager@moobase.com with Password123 and return manager role', async () => {
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({
+          username: 'manager@moobase.com',
+          password: 'Password123',
+        });
+      expect(loginRes.status).toBe(200);
+      expect(loginRes.body.user.role).toBe('manager');
+      expect(loginRes.body.user.username).toBe('manager@moobase.com');
+    });
+
     it('should authenticate valid credentials, persist profile name updates, and return persisted name on subsequent login', async () => {
       // 1. Login with valid credentials
       const loginRes = await request(app)

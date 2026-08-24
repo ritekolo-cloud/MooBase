@@ -66,8 +66,8 @@ export class AuthController {
       const data = registerSchema.parse(req.body);
 
       // Check if user exists
-      const existingUser = await prisma.user.findUnique({
-        where: { email: data.email },
+      const existingUser = await prisma.user.findFirst({
+        where: { email: { equals: data.email.trim(), mode: 'insensitive' } },
       });
       if (existingUser) {
         throw new AppError('User with this email/username already exists', 400);
@@ -114,8 +114,14 @@ export class AuthController {
     try {
       const data = loginSchema.parse(req.body);
 
-      const user = await prisma.user.findUnique({
-        where: { email: data.username },
+      const input = data.username.trim();
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: { equals: input, mode: 'insensitive' } },
+            { phone: input },
+          ],
+        },
       });
 
       if (!user) {
@@ -288,8 +294,8 @@ export class AuthController {
     try {
       const { email } = forgotPasswordSchema.parse(req.body);
 
-      const user = await prisma.user.findUnique({
-        where: { email },
+      const user = await prisma.user.findFirst({
+        where: { email: { equals: email.trim(), mode: 'insensitive' } },
       });
 
       if (!user) {
