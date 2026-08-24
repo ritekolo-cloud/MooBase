@@ -104,6 +104,15 @@ async function main() {
       gender: 'female',
       status: 'sick' as const,
     },
+    {
+      id: 'C006',
+      tagNumber: 'TAG-006',
+      name: 'Bruno',
+      breed: 'Boran Bull',
+      age: 4,
+      gender: 'male',
+      status: 'healthy' as const,
+    },
   ];
 
   for (const item of cattleData) {

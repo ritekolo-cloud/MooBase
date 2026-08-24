@@ -159,7 +159,7 @@ export function AddRecordScreen() {
                 <option value="">Select cattle...</option>
                 {cattle.map((animal) => (
                   <option key={animal.id} value={animal.id}>
-                    {animal.name} ({animal.id}) - {animal.breed}
+                    {animal.name} ({animal.id}) - {animal.breed} ({animal.gender === 'male' ? '♂ Male' : '♀ Female'})
                   </option>
                 ))}
               </select>

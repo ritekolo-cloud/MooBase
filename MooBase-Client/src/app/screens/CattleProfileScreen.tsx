@@ -102,10 +102,20 @@ export function CattleProfileScreen() {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-[20px] font-semibold text-foreground tracking-tight leading-tight">{cattle.name}</h2>
-              <p className="text-[14px] text-muted-foreground mt-1">{cattle.breed} • {cattle.age} years old</p>
-              <div className="mt-3">
+              <p className="text-[14px] text-muted-foreground mt-1">
+                {cattle.breed} • {cattle.age} years old
+              </p>
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
                 <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[12px] font-semibold uppercase tracking-wider border ${getStatusBadge(cattle.status)}`}>
                   {cattle.status}
+                </span>
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[12px] font-semibold border ${
+                  cattle.gender === 'male'
+                    ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
+                    : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
+                }`}>
+                  <span>{cattle.gender === 'male' ? '♂' : '♀'}</span>
+                  <span>{cattle.gender === 'male' ? 'Male (Bull)' : 'Female (Cow)'}</span>
                 </span>
               </div>
             </div>
@@ -129,6 +139,13 @@ export function CattleProfileScreen() {
               <div className="flex items-center justify-between px-6 py-4">
                 <span className="text-[14px] font-medium text-muted-foreground">Breed</span>
                 <span className="text-[14px] font-semibold text-foreground">{cattle.breed}</span>
+              </div>
+              <div className="flex items-center justify-between px-6 py-4">
+                <span className="text-[14px] font-medium text-muted-foreground">Gender / Sex</span>
+                <span className="text-[14px] font-semibold text-foreground flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${cattle.gender === 'male' ? 'bg-blue-500' : 'bg-rose-500'}`} />
+                  <span>{cattle.gender === 'male' ? 'Male (Bull / Steer) ♂' : 'Female (Cow / Heifer) ♀'}</span>
+                </span>
               </div>
               <div className="flex items-center justify-between px-6 py-4">
                 <span className="text-[14px] font-medium text-muted-foreground">Age</span>

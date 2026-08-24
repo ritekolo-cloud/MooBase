@@ -171,8 +171,16 @@ export function AttendantDashboard() {
                         <h4 className="text-[16px] font-semibold text-foreground truncate group-hover:text-primary transition-colors duration-150 ease-out">
                           {animal.name}
                         </h4>
-                        <p className="text-[14px] text-muted-foreground truncate">
-                          {animal.breed} • {animal.age} yrs
+                        <p className="text-[14px] text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
+                          <span>{animal.breed} • {animal.age} yrs</span>
+                          <span>•</span>
+                          <span className={`text-[12px] font-semibold px-1.5 py-0.2 rounded border ${
+                            animal.gender === 'male'
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : 'bg-rose-50 text-rose-700 border-rose-200'
+                          }`}>
+                            {animal.gender === 'male' ? '♂ Male' : '♀ Female'}
+                          </span>
                         </p>
                       </div>
                     </div>

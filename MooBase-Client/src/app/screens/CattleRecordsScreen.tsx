@@ -15,6 +15,8 @@ export function CattleRecordsScreen() {
 
   const filters = [
     { id: 'all', label: 'All', count: cattle.length },
+    { id: 'female', label: 'Female ♀', count: cattle.filter((c) => c.gender === 'female' || !c.gender).length },
+    { id: 'male', label: 'Male ♂', count: cattle.filter((c) => c.gender === 'male').length },
     { id: 'healthy', label: 'Healthy', count: cattle.filter((c) => c.status === 'healthy').length },
     { id: 'sick', label: 'Sick', count: cattle.filter((c) => c.status === 'sick').length },
     {
@@ -32,7 +34,11 @@ export function CattleRecordsScreen() {
   const filteredCattle = useMemo(() => {
     let result = cattle;
 
-    if (selectedFilter !== 'all') {
+    if (selectedFilter === 'female') {
+      result = result.filter((c) => c.gender === 'female' || !c.gender);
+    } else if (selectedFilter === 'male') {
+      result = result.filter((c) => c.gender === 'male');
+    } else if (selectedFilter !== 'all') {
       result = result.filter((c) => c.status === selectedFilter);
     }
 
@@ -41,7 +47,8 @@ export function CattleRecordsScreen() {
         (c) =>
           c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          c.breed.toLowerCase().includes(searchQuery.toLowerCase())
+          c.breed.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (c.gender && c.gender.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
@@ -170,7 +177,17 @@ export function CattleRecordsScreen() {
                   
                   <div className="col-span-3 hidden md:block">
                     <p className="text-[16px] text-foreground truncate">{animal.breed}</p>
-                    <p className="text-[14px] text-muted-foreground">{animal.age} years</p>
+                    <p className="text-[14px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                      <span>{animal.age} yrs</span>
+                      <span>•</span>
+                      <span className={`inline-flex items-center gap-0.5 font-semibold text-[12px] px-1.5 py-0.2 rounded border ${
+                        animal.gender === 'male'
+                          ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
+                          : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
+                      }`}>
+                        <span>{animal.gender === 'male' ? '♂ Male' : '♀ Female'}</span>
+                      </span>
+                    </p>
                   </div>
                   
                   <div className="col-span-3 flex items-center">
@@ -183,8 +200,18 @@ export function CattleRecordsScreen() {
                   
                   {/* Mobile details layout */}
                   <div className="flex items-center justify-between mt-2 md:hidden">
-                    <p className="text-[14px] text-muted-foreground font-medium">
-                      {animal.breed} • {animal.age} yrs
+                    <p className="text-[14px] text-muted-foreground font-medium flex items-center gap-1.5">
+                      <span>{animal.breed}</span>
+                      <span>•</span>
+                      <span>{animal.age} yrs</span>
+                      <span>•</span>
+                      <span className={`inline-flex items-center font-semibold text-[12px] px-1.5 py-0.2 rounded border ${
+                        animal.gender === 'male'
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-rose-50 text-rose-700 border-rose-200'
+                      }`}>
+                        {animal.gender === 'male' ? '♂ Male' : '♀ Female'}
+                      </span>
                     </p>
                     <ChevronRight className="w-[18px] h-[18px] text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all duration-150 ease-out" />
                   </div>

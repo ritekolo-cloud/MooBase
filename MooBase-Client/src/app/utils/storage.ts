@@ -10,10 +10,12 @@ export interface User {
 
 export interface Cattle {
   id: string;
+  tagNumber?: string;
   name: string;
   breed: string;
   age: number;
-  status: 'healthy' | 'sick' | 'vaccinated' | 'lactating';
+  gender: 'male' | 'female' | string;
+  status: 'healthy' | 'sick' | 'vaccinated' | 'lactating' | 'sold' | 'dead';
   imageUrl?: string;
   lastUpdate: string;
 }
@@ -81,10 +83,18 @@ export const storage = {
     localStorage.removeItem('moobase_refresh_token');
   },
 
-  // Cattle management
   getCattle: (): Cattle[] => {
     const cattle = localStorage.getItem(STORAGE_KEYS.CATTLE);
-    return cattle ? JSON.parse(cattle) : [];
+    if (!cattle) return [];
+    try {
+      const parsed: Cattle[] = JSON.parse(cattle);
+      return parsed.map((c) => ({
+        ...c,
+        gender: c.gender || (c.status === 'lactating' ? 'female' : 'female'),
+      }));
+    } catch {
+      return [];
+    }
   },
 
   setCattle: (cattle: Cattle[]) => {
@@ -268,43 +278,63 @@ export const initializeMockData = () => {
     const mockCattle: Cattle[] = [
       {
         id: 'C001',
+        tagNumber: 'TAG-001',
         name: 'Bella',
         breed: 'Friesian',
         age: 3,
+        gender: 'female',
         status: 'healthy',
         lastUpdate: new Date().toISOString(),
       },
       {
         id: 'C002',
+        tagNumber: 'TAG-002',
         name: 'Daisy',
         breed: 'Jersey',
         age: 4,
+        gender: 'female',
         status: 'lactating',
         lastUpdate: new Date().toISOString(),
       },
       {
         id: 'C003',
+        tagNumber: 'TAG-003',
         name: 'Rose',
         breed: 'Ankole',
         age: 2,
+        gender: 'female',
         status: 'healthy',
         lastUpdate: new Date().toISOString(),
       },
       {
         id: 'C004',
+        tagNumber: 'TAG-004',
         name: 'Luna',
         breed: 'Friesian',
         age: 5,
+        gender: 'female',
         status: 'vaccinated',
         lastUpdate: new Date(Date.now() - 86400000).toISOString(),
       },
       {
         id: 'C005',
+        tagNumber: 'TAG-005',
         name: 'Molly',
         breed: 'Crossbreed',
         age: 3,
+        gender: 'female',
         status: 'sick',
         lastUpdate: new Date(Date.now() - 172800000).toISOString(),
+      },
+      {
+        id: 'C006',
+        tagNumber: 'TAG-006',
+        name: 'Bruno',
+        breed: 'Boran Bull',
+        age: 4,
+        gender: 'male',
+        status: 'healthy',
+        lastUpdate: new Date().toISOString(),
       },
     ];
     storage.setCattle(mockCattle);
