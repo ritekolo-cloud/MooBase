@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { motion } from 'motion/react';
 import { Eye, EyeOff } from 'lucide-react';
-import { storage, User } from '../utils/storage';
+import { storage } from '../utils/storage';
 import { API_BASE_URL } from '../config/api';
 import { toast } from 'sonner';
 
@@ -25,39 +25,6 @@ export function LoginScreen() {
 
     setIsLoading(true);
 
-    const tryOfflineFallback = (loginUser: string): boolean => {
-      storage.init();
-      const cleanUser = loginUser.trim().toLowerCase();
-      const allUsers = storage.getUsers();
-
-      const defaultAccounts: User[] = [
-        { id: 'u001', username: 'manager@moobase.com', role: 'manager', name: 'Kabaka Ronald' },
-        { id: 'u000', username: 'admin@moobase.com', role: 'manager', name: 'Farm Manager' },
-        { id: 'u002', username: 'attendant1@moobase.com', role: 'attendant', name: 'Mukasa John' },
-        { id: 'u003', username: 'attendant2@moobase.com', role: 'attendant', name: 'Nalule Sarah' },
-        { id: 'u004', username: 'attendant@moobase.com', role: 'attendant', name: 'Attendant User' },
-      ];
-
-      const matchedUser =
-        allUsers.find((u) => u.username?.toLowerCase() === cleanUser || u.phone === cleanUser) ||
-        defaultAccounts.find((u) => u.username?.toLowerCase() === cleanUser);
-
-      if (matchedUser) {
-        storage.setUser(matchedUser);
-        storage.setOfflineMode(true);
-        toast.info('Authentication server is unreachable. Continuing in Offline Mode.', {
-          duration: 4000,
-        });
-        if (matchedUser.role === 'manager') {
-          navigate('/manager/dashboard');
-        } else {
-          navigate('/attendant/dashboard');
-        }
-        return true;
-      }
-      return false;
-    };
-
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
@@ -73,9 +40,7 @@ export function LoginScreen() {
       const resData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        if (response.status >= 500 && tryOfflineFallback(username)) {
-          return;
-        }
+        storage.clearUser();
         const errorMsg = resData.message || 'Invalid email/username or password';
         setError(errorMsg);
         toast.error(errorMsg);
@@ -137,14 +102,13 @@ export function LoginScreen() {
         err.message?.includes('NetworkError');
 
       if (isNetworkError) {
-        if (tryOfflineFallback(username)) {
-          return;
-        }
+        storage.clearUser();
         const netMsg =
-          'Unable to connect to the authentication server. Please check your internet connection or try again later.';
+          'Unable to connect to the authentication server. Please sign in when the server is reachable.';
         setError(netMsg);
         toast.error(netMsg);
       } else {
+        storage.clearUser();
         const errorMsg = err.message || 'Invalid email/username or password';
         setError(errorMsg);
         toast.error(errorMsg);

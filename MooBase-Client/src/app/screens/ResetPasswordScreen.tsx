@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { motion } from 'motion/react';
-import { KeyRound, Eye, EyeOff, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 import { toast } from 'sonner';
 
@@ -13,7 +13,6 @@ export function ResetPasswordScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -73,9 +72,8 @@ export function ResetPasswordScreen() {
         err.message?.includes('Failed to fetch');
 
       if (isNetworkError) {
-        console.warn('Backend connection failed. Performing mock password reset fallback...', err);
-        setIsSuccess(true);
-        toast.warning('Offline Fallback: Password updated locally.');
+        console.warn('Password reset failed because the server is unreachable.', err);
+        toast.error('Unable to connect to the authentication server. Please try again when the server is reachable.');
       } else {
         toast.error(err.message || 'Failed to reset password');
       }

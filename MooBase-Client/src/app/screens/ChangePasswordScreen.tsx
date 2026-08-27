@@ -65,9 +65,8 @@ export function ChangePasswordScreen() {
         err.message?.includes('Failed to fetch');
 
       if (isNetworkError) {
-        console.warn('Backend connection failed. Performing offline password change...', err);
-        toast.warning('Offline: Password changed locally.');
-        navigate('/settings');
+        console.warn('Password change failed because the server is unreachable.', err);
+        toast.error('Unable to connect to the authentication server. Please try again when the server is reachable.');
       } else {
         toast.error(err.message || 'Failed to change password');
       }

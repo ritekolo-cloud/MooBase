@@ -47,15 +47,8 @@ export function ForgotPasswordScreen() {
         err.message?.includes('Failed to fetch');
 
       if (isNetworkError) {
-        console.warn('Backend connection failed. Performing mock forgot password fallback...', err);
-        setIsSent(true);
-        toast.warning('Mock: Password reset link generated. Check console.');
-        
-        const mockToken = 'mock_reset_token_' + Date.now();
-        console.log('========================================');
-        console.log(`🔑 MOCK RESET LINK FOR: ${email}`);
-        console.log(`Link: /reset-password?token=${mockToken}`);
-        console.log('========================================');
+        console.warn('Password reset request failed because the server is unreachable.', err);
+        toast.error('Unable to connect to the authentication server. Please try again when the server is reachable.');
       } else {
         toast.error(err.message || 'Failed to request password reset');
       }

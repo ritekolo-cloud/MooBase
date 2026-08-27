@@ -5,51 +5,49 @@ import bcrypt from 'bcryptjs';
 
 async function ensureDefaultUsers() {
   try {
-    const passwordHash = await bcrypt.hash('Password123', 10);
     const defaultUsers = [
       {
         email: 'manager@moobase.com',
         name: 'Kabaka Ronald',
-        passwordHash,
         role: 'manager' as const,
         phone: '+256700000001',
       },
       {
         email: 'admin@moobase.com',
         name: 'Farm Manager',
-        passwordHash,
         role: 'manager' as const,
         phone: '+256700000000',
       },
       {
         email: 'attendant@moobase.com',
         name: 'Attendant User',
-        passwordHash,
         role: 'attendant' as const,
         phone: '+256700000002',
       },
       {
         email: 'attendant1@moobase.com',
         name: 'Mukasa John',
-        passwordHash,
         role: 'attendant' as const,
         phone: '+256700000003',
       },
       {
         email: 'attendant2@moobase.com',
         name: 'Nalule Sarah',
-        passwordHash,
         role: 'attendant' as const,
         phone: '+256700000004',
       },
     ];
 
     for (const u of defaultUsers) {
-      await prisma.user.upsert({
-        where: { email: u.email },
-        update: { passwordHash: u.passwordHash, name: u.name, role: u.role, phone: u.phone },
-        create: u,
-      });
+      const existingUser = await prisma.user.findUnique({ where: { email: u.email } });
+      if (!existingUser) {
+        await prisma.user.create({
+          data: {
+            ...u,
+            passwordHash: await bcrypt.hash('Password123', 10),
+          },
+        });
+      }
     }
     console.log('✅ Default users verified and seeded');
   } catch (err: any) {
@@ -59,7 +57,9 @@ async function ensureDefaultUsers() {
 
 const server = app.listen(env.PORT, async () => {
   console.log(`🚀 MooBase Server running in ${env.NODE_ENV} mode on http://localhost:${env.PORT}`);
-  await ensureDefaultUsers();
+  if (env.NODE_ENV !== 'production') {
+    await ensureDefaultUsers();
+  }
 });
 
 process.on('unhandledRejection', (err: any) => {

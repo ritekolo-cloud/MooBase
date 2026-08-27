@@ -4,20 +4,31 @@ import { Home, Users, BarChart3, Settings, Cloud, LogOut, Shield, UserCog } from
 import { storage } from '../../utils/storage';
 import { BottomNav } from '../BottomNav';
 
+const getAuthenticatedUser = () => {
+  const user = storage.getUser();
+  const token = localStorage.getItem('moobase_access_token');
+  return user && token ? user : null;
+};
+
 export function AuthenticatedLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState(storage.getUser());
+  const [user, setUser] = useState(getAuthenticatedUser);
 
   useEffect(() => {
-    if (!user) {
+    const authenticatedUser = getAuthenticatedUser();
+    if (!authenticatedUser) {
+      storage.clearUser();
+      setUser(null);
       navigate('/login', { replace: true });
+      return;
     }
-  }, [user, navigate]);
+    setUser(authenticatedUser);
+  }, [navigate]);
 
   useEffect(() => {
     const handleProfileUpdate = () => {
-      setUser(storage.getUser());
+      setUser(getAuthenticatedUser());
     };
     window.addEventListener('profile-updated', handleProfileUpdate);
     return () => {

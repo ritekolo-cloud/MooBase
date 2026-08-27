@@ -5,7 +5,6 @@ import { SplashScreen } from "./screens/SplashScreen";
 import { LoginScreen } from "./screens/LoginScreen";
 import { ForgotPasswordScreen } from "./screens/ForgotPasswordScreen";
 import { ResetPasswordScreen } from "./screens/ResetPasswordScreen";
-import { RoleSelectionScreen } from "./screens/RoleSelectionScreen";
 import { ManagerDashboard } from "./screens/ManagerDashboard";
 import { AttendantDashboard } from "./screens/AttendantDashboard";
 import { CattleRecordsScreen } from "./screens/CattleRecordsScreen";
@@ -30,7 +29,6 @@ export const router = createBrowserRouter([
       { path: "login", Component: LoginScreen },
       { path: "forgot-password", Component: ForgotPasswordScreen },
       { path: "reset-password", Component: ResetPasswordScreen },
-      { path: "role-selection", Component: RoleSelectionScreen },
       {
         Component: AuthenticatedLayout,
         children: [
@@ -59,4 +57,3 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
-

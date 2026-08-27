@@ -74,13 +74,20 @@ export const storage = {
 
   getUser: (): User | null => {
     const user = localStorage.getItem(STORAGE_KEYS.USER);
-    return user ? JSON.parse(user) : null;
+    if (!user) return null;
+    try {
+      return JSON.parse(user);
+    } catch {
+      storage.clearUser();
+      return null;
+    }
   },
 
   clearUser: () => {
     localStorage.removeItem(STORAGE_KEYS.USER);
     localStorage.removeItem('moobase_access_token');
     localStorage.removeItem('moobase_refresh_token');
+    localStorage.removeItem(STORAGE_KEYS.OFFLINE_MODE);
   },
 
   getCattle: (): Cattle[] => {
