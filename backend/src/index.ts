@@ -57,9 +57,7 @@ async function ensureDefaultUsers() {
 
 const server = app.listen(env.PORT, async () => {
   console.log(`🚀 MooBase Server running in ${env.NODE_ENV} mode on http://localhost:${env.PORT}`);
-  if (env.NODE_ENV !== 'production') {
-    await ensureDefaultUsers();
-  }
+  await ensureDefaultUsers();
 });
 
 process.on('unhandledRejection', (err: any) => {
