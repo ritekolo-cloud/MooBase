@@ -10,6 +10,7 @@ import {
   UserCog,
   FileText,
   ChevronRight,
+  BellRing,
 } from 'lucide-react';
 import { storage } from '../../utils/storage';
 import { BottomNav } from '../BottomNav';
@@ -77,6 +78,7 @@ export function AuthenticatedLayout() {
     { icon: Home, label: 'Dashboard', path: dashboardPath },
     { icon: Users, label: 'Cattle Records', path: '/cattle' },
     { icon: FileText, label: 'Add Record', path: '/records/add' },
+    { icon: BellRing, label: 'Tasks & Reminders', path: '/reminders' },
     ...(user.role === 'manager'
       ? [
           { icon: BarChart3, label: 'Reports', path: '/reports' },

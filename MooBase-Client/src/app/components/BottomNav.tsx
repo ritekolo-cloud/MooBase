@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router';
 import { motion } from 'motion/react';
-import { Home, BarChart3, ClipboardList, MoreHorizontal, Cloud } from 'lucide-react';
+import { Home, BarChart3, ClipboardList, MoreHorizontal, Cloud, BellRing } from 'lucide-react';
 
 interface BottomNavProps {
   role: 'manager' | 'attendant';
@@ -30,16 +30,17 @@ export function BottomNav({ role }: BottomNavProps) {
         { icon: Home, label: 'Home', path: dashboardPath },
         { icon: CowNavIcon, label: 'Cattle', path: '/cattle' },
         { icon: ClipboardList, label: 'Records', path: '/records/add' },
-        { icon: BarChart3, label: 'Reports', path: '/reports' },
+        { icon: BellRing, label: 'Tasks', path: '/reminders' },
         { icon: MoreHorizontal, label: 'More', path: '/settings' },
       ]
     : [
         { icon: Home, label: 'Home', path: dashboardPath },
         { icon: CowNavIcon, label: 'Cattle', path: '/cattle' },
         { icon: ClipboardList, label: 'Add Record', path: '/records/add' },
-        { icon: Cloud, label: 'Sync', path: '/sync' },
+        { icon: BellRing, label: 'Tasks', path: '/reminders' },
         { icon: MoreHorizontal, label: 'More', path: '/settings' },
       ];
+
 
   return (
     <nav

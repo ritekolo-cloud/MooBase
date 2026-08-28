@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { storage, Cattle, Record as CattleRecord } from '../utils/storage';
 import { useEffect, useState } from 'react';
-import { farmDataService, DashboardSummary } from '../services/farmDataService';
+import { farmDataService, DashboardSummary, Reminder } from '../services/farmDataService';
 
 // Custom Cow Silhouette Icon for the branding
 function CowBrandIcon({ className = 'w-6 h-6' }: { className?: string }) {
@@ -78,14 +78,21 @@ export function ManagerDashboard() {
   const [records, setRecords] = useState<CattleRecord[]>(storage.getRecords());
   const [user, setUser] = useState(storage.getUser());
   const [serverStats, setServerStats] = useState<DashboardSummary | null>(null);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
 
   // Authoritative data fetch from PostgreSQL via backend
   const fetchServerData = async () => {
-    const result = await farmDataService.getDashboardSummary();
-    if (result.ok) {
-      setServerStats(result.data);
+    const [summaryResult, remindersResult] = await Promise.all([
+      farmDataService.getDashboardSummary(),
+      farmDataService.getReminders(),
+    ]);
+    if (summaryResult.ok) {
+      setServerStats(summaryResult.data);
       setCattle(storage.getCattle());
       setRecords(storage.getRecords());
+    }
+    if (remindersResult.ok) {
+      setReminders(remindersResult.data.reminders);
     }
     setUser(storage.getUser());
   };
@@ -151,6 +158,14 @@ export function ManagerDashboard() {
     milkToday: serverStats?.milkToday ?? todayMilkRecords.length,
     dueToday: serverStats?.dueToday ?? todayRecords.length,
   };
+
+  // Bell badge — real total from server (overdue + due_today + upcoming + attention)
+  const totalReminders = serverStats?.totalReminders ?? reminders.length;
+
+  // Today's Tasks: reminders that need immediate attention (overdue + due_today + attention)
+  const todayReminders = reminders.filter(
+    (r) => r.status === 'overdue' || r.status === 'due_today' || r.status === 'attention'
+  );
 
   // Build Today's activities list dynamically from existing data
   const dynamicActivities: Array<{
@@ -279,16 +294,16 @@ export function ManagerDashboard() {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Notification Bell */}
+              {/* Notification Bell — badge shows real unresolved reminder count from PostgreSQL */}
               <button
-                onClick={() => navigate('/cattle', { state: { filter: 'sick' } })}
+                onClick={() => navigate('/reminders')}
                 className="relative w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center cursor-pointer text-white"
-                title={requireAttentionCount > 0 ? `${requireAttentionCount} alerts` : 'No active alerts'}
+                title={totalReminders > 0 ? `${totalReminders} unresolved reminders` : 'No active reminders'}
               >
                 <Bell className="w-5 h-5" />
-                {requireAttentionCount > 0 && (
+                {totalReminders > 0 && (
                   <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-[#0F3D18]">
-                    {requireAttentionCount}
+                    {totalReminders > 9 ? '9+' : totalReminders}
                   </span>
                 )}
               </button>
@@ -404,12 +419,12 @@ export function ManagerDashboard() {
             </div>
           </motion.div>
 
-          {/* 4. Due / Recorded Today */}
+          {/* 4. Due / Vaccinations Due Today */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: 0.15 }}
-            onClick={() => navigate('/records/add')}
+            onClick={() => navigate('/reminders')}
             className="bg-card rounded-2xl p-4 sm:p-5 border border-border shadow-sm hover:shadow-md hover:border-accent/40 transition-all cursor-pointer group flex flex-col justify-between"
           >
             <div className="flex items-start justify-between">
@@ -425,11 +440,17 @@ export function ManagerDashboard() {
                 <Syringe className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
             </div>
-            <div className="flex items-center gap-1 text-xs font-semibold text-accent group-hover:translate-x-0.5 transition-transform mt-3">
-              <span>View due items</span>
+            <div className="mt-2">
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                {stats.dueToday === 0 ? 'No vaccinations due today' : `${stats.dueToday} vaccination${stats.dueToday > 1 ? 's' : ''} require attention`}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 text-xs font-semibold text-accent group-hover:translate-x-0.5 transition-transform mt-2">
+              <span>View reminders →</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </div>
           </motion.div>
+
 
         </section>
 
@@ -488,58 +509,59 @@ export function ManagerDashboard() {
         {/* 2-Column Section: Today's Activities + Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
-          {/* Left: Today's Activities */}
+          {/* Left: Today's Tasks — powered by real reminders from PostgreSQL */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm sm:text-base font-bold text-foreground tracking-tight uppercase">
-                  Today's Activities
+                  Today's Tasks
                 </h2>
                 <Calendar className="w-4 h-4 text-muted-foreground" />
               </div>
+              <button
+                onClick={() => navigate('/reminders')}
+                className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5"
+              >
+                All reminders <ChevronRight className="w-3 h-3" />
+              </button>
             </div>
 
             <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden divide-y divide-border">
-              {dynamicActivities.length === 0 ? (
+              {todayReminders.length === 0 ? (
                 <div className="p-8 text-center">
-                  <p className="text-sm font-semibold text-muted-foreground">No activities scheduled for today</p>
-                  <button
-                    onClick={() => navigate('/records/add')}
-                    className="mt-3 text-xs font-semibold text-primary hover:underline"
-                  >
-                    + Record an activity now
-                  </button>
+                  <Sparkles className="w-7 h-7 text-emerald-500 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-muted-foreground">All caught up!</p>
+                  <p className="text-xs text-muted-foreground mt-1">No overdue or due-today activities</p>
                 </div>
               ) : (
-                dynamicActivities.slice(0, 5).map((act) => {
+                todayReminders.slice(0, 5).map((reminder) => {
                   let Icon = Syringe;
                   let iconBg = 'bg-accent/10 text-accent';
-                  if (act.type === 'breeding') {
+                  let badgeBg = '#FEF3C7'; let badgeText = '#92400E'; let badgeBorder = '#FDE68A';
+
+                  if (reminder.status === 'overdue') {
+                    badgeBg = '#FEE2E2'; badgeText = '#991B1B'; badgeBorder = '#FECACA';
+                  } else if (reminder.status === 'attention') {
+                    badgeBg = '#FFF7ED'; badgeText = '#9A3412'; badgeBorder = '#FED7AA';
+                  }
+
+                  if (reminder.type === 'breeding_followup') {
                     Icon = HeartHandshake;
                     iconBg = 'bg-[#1B5E20]/10 text-[#1B5E20]';
-                  } else if (act.type === 'health') {
+                  } else if (reminder.type === 'sick_cattle') {
                     Icon = HeartPulse;
                     iconBg = 'bg-destructive/10 text-destructive';
-                  } else if (act.type === 'milk') {
-                    Icon = Milk;
-                    iconBg = 'bg-secondary/10 text-secondary';
-                  } else if (act.type === 'feeding') {
-                    Icon = Wheat;
-                    iconBg = 'bg-emerald-600/10 text-emerald-700';
                   }
+
+                  const statusLabel =
+                    reminder.status === 'overdue' ? 'OVERDUE' :
+                    reminder.status === 'due_today' ? 'DUE TODAY' :
+                    'ATTENTION';
 
                   return (
                     <button
-                      key={act.id}
-                      onClick={() => {
-                        if (act.cattleId) {
-                          navigate(`/cattle/profile/${act.cattleId}`);
-                        } else if (act.recordId) {
-                          navigate(`/records/edit/${act.recordId}`);
-                        } else {
-                          navigate('/cattle');
-                        }
-                      }}
+                      key={reminder.id}
+                      onClick={() => navigate(`/cattle/profile/${reminder.cattleId}`)}
                       className="w-full px-4 py-3.5 flex items-center justify-between hover:bg-muted/40 transition-colors text-left group cursor-pointer"
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -548,10 +570,10 @@ export function ManagerDashboard() {
                         </div>
                         <div className="min-w-0">
                           <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                            {act.label}
+                            {reminder.cattleName}
                           </h3>
-                          <p className="text-xs font-mono font-medium text-muted-foreground mt-0.5">
-                            {act.tag}
+                          <p className="text-xs font-medium text-muted-foreground mt-0.5 truncate">
+                            {reminder.description}
                           </p>
                         </div>
                       </div>
@@ -559,13 +581,9 @@ export function ManagerDashboard() {
                       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                         <span
                           className="px-2 py-0.5 rounded-md text-[11px] font-bold border"
-                          style={{
-                            backgroundColor: act.statusBadge.bg,
-                            color: act.statusBadge.textCol,
-                            borderColor: act.statusBadge.borderCol,
-                          }}
+                          style={{ backgroundColor: badgeBg, color: badgeText, borderColor: badgeBorder }}
                         >
-                          {act.statusBadge.text}
+                          {statusLabel}
                         </span>
                         <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
                       </div>
@@ -574,17 +592,18 @@ export function ManagerDashboard() {
                 })
               )}
 
-              {dynamicActivities.length > 0 && (
+              {todayReminders.length > 0 && (
                 <button
-                  onClick={() => navigate('/cattle')}
+                  onClick={() => navigate('/reminders')}
                   className="w-full py-3 px-4 text-xs font-bold text-[#1B5E20] hover:bg-[#1B5E20]/5 text-center flex items-center justify-center gap-1 transition-colors"
                 >
-                  <span>View all activities</span>
+                  <span>View all reminders</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
           </section>
+
 
           {/* Right: Quick Actions */}
           <section className="space-y-3">

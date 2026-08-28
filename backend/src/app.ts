@@ -14,6 +14,7 @@ import syncRouter from './routes/sync.routes';
 import reportRouter from './routes/report.routes';
 import userRouter from './routes/user.routes';
 import dashboardRouter from './routes/dashboard.routes';
+import reminderRouter from './routes/reminder.routes';
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use('/api/sync', syncRouter);
 app.use('/api/reports', reportRouter);
 app.use('/api/users', userRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/reminders', reminderRouter);
 
 // Mount records (health, vaccination, milk, breeding, feeding) directly under /api
 app.use('/api', recordRouter);

@@ -30,7 +30,12 @@ export interface DashboardSummary {
   deadCount: number;
   todayMilkLiters: number;
   milkToday: number;
-  dueToday: number;
+  // Reminder counts — each semantically distinct
+  dueToday: number;          // vaccinations with nextDueDate = today
+  overdueCount: number;      // vaccinations past nextDueDate
+  upcomingCount: number;     // vaccinations in next 14 days
+  attentionCount: number;    // sick cattle + pending breeding
+  totalReminders: number;    // all unresolved items
   todayActivities: number;
   sickCattleList: Cattle[];
   assignedCattle: Cattle[];
@@ -47,6 +52,36 @@ export interface RecentActivity {
   date: string;
   title: string;
   description: string;
+}
+
+export type ReminderStatus = 'overdue' | 'due_today' | 'upcoming' | 'attention';
+export type ReminderType = 'vaccination' | 'breeding_followup' | 'sick_cattle';
+
+export interface Reminder {
+  id: string;
+  type: ReminderType;
+  title: string;
+  cattleId: string;
+  cattleName: string;
+  cattleTag: string;
+  dueDate: string | null;      // null for attention-only items (sick cattle, pending breeding)
+  status: ReminderStatus;
+  priority: 'high' | 'medium' | 'low';
+  description: string;
+  // type-specific
+  vaccineName?: string;        // vaccination reminders
+  breedingDate?: string;       // breeding follow-up reminders
+}
+
+export interface ReminderResponse {
+  reminders: Reminder[];
+  summary: {
+    dueToday: number;
+    overdueCount: number;
+    upcomingCount: number;
+    attentionCount: number;
+    totalReminders: number;
+  };
 }
 
 export type ServiceResult<T> =
@@ -479,4 +514,40 @@ export const farmDataService = {
       console.warn('Revalidation skipped (network issue):', err);
     }
   },
+
+  // ─── Reminders ───────────────────────────────────────────────────────────────
+
+  /**
+   * Fetch the current reminder/due-task list from PostgreSQL via the backend.
+   * This is the ONLY legitimate source of reminders — no local computation.
+   *
+   * When offline: returns an empty reminder list clearly marked fromCache=true.
+   * The UI should show an "offline — reminder data may be outdated" indicator.
+   */
+  async getReminders(): Promise<ServiceResult<ReminderResponse>> {
+    if (!navigator.onLine || !getToken()) {
+      // Offline: return empty reminders with cache flag — do NOT fabricate
+      return {
+        ok: true,
+        fromCache: true,
+        data: {
+          reminders: [],
+          summary: {
+            dueToday: 0,
+            overdueCount: 0,
+            upcomingCount: 0,
+            attentionCount: 0,
+            totalReminders: 0,
+          },
+        },
+      };
+    }
+
+    const result = await apiFetch<ReminderResponse>('/reminders');
+    if (result.ok) {
+      return { ok: true, data: result.data, fromCache: false };
+    }
+    return { ok: false, error: result.error, status: (result as any).status };
+  },
 };
+

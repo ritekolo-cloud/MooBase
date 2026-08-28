@@ -19,6 +19,7 @@ import { SettingsScreen } from "./screens/SettingsScreen";
 import { ChangePasswordScreen } from "./screens/ChangePasswordScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { NotFoundScreen } from "./screens/NotFoundScreen";
+import { RemindersScreen } from "./screens/RemindersScreen";
 
 export const router = createBrowserRouter([
   {
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
           { path: "settings", Component: SettingsScreen },
           { path: "settings/change-password", Component: ChangePasswordScreen },
           { path: "profile", Component: ProfileScreen },
+          { path: "reminders", Component: RemindersScreen },
         ],
       },
       { path: "*", Component: NotFoundScreen },

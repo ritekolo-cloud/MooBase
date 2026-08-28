@@ -14,10 +14,11 @@ import {
   Wheat,
   Clock,
   HeartHandshake,
+  Calendar,
 } from 'lucide-react';
 import { storage, Cattle, Record as CattleRecord } from '../utils/storage';
 import { useEffect, useState } from 'react';
-import { farmDataService, DashboardSummary } from '../services/farmDataService';
+import { farmDataService, DashboardSummary, Reminder } from '../services/farmDataService';
 
 function CowBrandIcon({ className = 'w-6 h-6' }: { className?: string }) {
   return (
@@ -60,13 +61,20 @@ export function AttendantDashboard() {
   const [syncQueue, setSyncQueue] = useState(storage.getSyncQueue());
   const [user, setUser] = useState(storage.getUser());
   const [serverStats, setServerStats] = useState<DashboardSummary | null>(null);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
 
   const fetchServerData = async () => {
-    const result = await farmDataService.getDashboardSummary();
-    if (result.ok) {
-      setServerStats(result.data);
+    const [summaryResult, remindersResult] = await Promise.all([
+      farmDataService.getDashboardSummary(),
+      farmDataService.getReminders(),
+    ]);
+    if (summaryResult.ok) {
+      setServerStats(summaryResult.data);
       setCattle(storage.getCattle());
       setRecords(storage.getRecords());
+    }
+    if (remindersResult.ok) {
+      setReminders(remindersResult.data.reminders);
     }
     setSyncQueue(storage.getSyncQueue());
     setUser(storage.getUser());
@@ -111,6 +119,14 @@ export function AttendantDashboard() {
   // Use authoritative server stats when available
   const sickCattle = serverStats?.sickCattleList || cattle.filter((c) => c.status === 'sick');
   const requireAttentionCount = serverStats?.requireAttention ?? sickCattle.length;
+  const totalHerdCount = serverStats?.totalCattle ?? cattle.length;
+  const totalReminders = serverStats?.totalReminders ?? reminders.length;
+  const dueTodayCount = serverStats?.dueToday ?? 0;
+
+  // Reminders for Today's Tasks
+  const todayReminders = reminders.filter(
+    (r) => r.status === 'overdue' || r.status === 'due_today' || r.status === 'attention'
+  );
 
   const todayDateStr = new Date().toDateString();
   const todayRecords = records.filter(
@@ -152,6 +168,20 @@ export function AttendantDashboard() {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Notification Bell — Real count from server */}
+              <button
+                onClick={() => navigate('/reminders')}
+                className="relative w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center cursor-pointer text-white"
+                title={totalReminders > 0 ? `${totalReminders} active tasks & reminders` : 'No active reminders'}
+              >
+                <Bell className="w-5 h-5" />
+                {totalReminders > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-[#0F3D18]">
+                    {totalReminders > 9 ? '9+' : totalReminders}
+                  </span>
+                )}
+              </button>
+
               {/* Sync Status Button */}
               <button
                 onClick={() => navigate('/sync')}
@@ -176,6 +206,7 @@ export function AttendantDashboard() {
               </button>
             </div>
           </div>
+
 
           {/* Greeting */}
           <div className="pt-6">
@@ -260,7 +291,7 @@ export function AttendantDashboard() {
                   Total Herd
                 </span>
                 <span className="text-2xl sm:text-3xl font-bold text-foreground mt-1 block">
-                  {cattle.length}
+                  {totalHerdCount}
                 </span>
               </div>
               <div className="w-10 h-10 rounded-xl bg-muted text-foreground flex items-center justify-center">
@@ -273,7 +304,31 @@ export function AttendantDashboard() {
             </div>
           </div>
 
-          {/* 3. Require Attention */}
+          {/* 3. Due Tasks / Reminders */}
+          <div
+            onClick={() => navigate('/reminders')}
+            className="bg-card rounded-2xl p-4 sm:p-5 border border-border shadow-sm hover:shadow-md hover:border-amber-400/40 transition-all cursor-pointer group flex flex-col justify-between"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-xs sm:text-sm font-semibold text-muted-foreground block">
+                  Due Today
+                </span>
+                <span className={`text-2xl sm:text-3xl font-bold mt-1 block ${dueTodayCount > 0 ? 'text-amber-700' : 'text-foreground'}`}>
+                  {dueTodayCount}
+                </span>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                <Syringe className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-xs font-semibold text-amber-700 group-hover:translate-x-0.5 transition-transform mt-3">
+              <span>View tasks</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </div>
+          </div>
+
+          {/* 4. Require Attention */}
           <div
             onClick={() => navigate('/cattle', { state: { filter: 'sick' } })}
             className="bg-card rounded-2xl p-4 sm:p-5 border border-border shadow-sm hover:shadow-md hover:border-destructive/40 transition-all cursor-pointer group flex flex-col justify-between"
@@ -293,30 +348,6 @@ export function AttendantDashboard() {
             </div>
             <div className="flex items-center gap-1 text-xs font-semibold text-destructive group-hover:translate-x-0.5 transition-transform mt-3">
               <span>View sick</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </div>
-          </div>
-
-          {/* 4. Healthy Animals */}
-          <div
-            onClick={() => navigate('/cattle', { state: { filter: 'healthy' } })}
-            className="bg-card rounded-2xl p-4 sm:p-5 border border-border shadow-sm hover:shadow-md hover:border-emerald-600/40 transition-all cursor-pointer group flex flex-col justify-between"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="text-xs sm:text-sm font-semibold text-muted-foreground block">
-                  Healthy Herd
-                </span>
-                <span className="text-2xl sm:text-3xl font-bold text-emerald-700 mt-1 block">
-                  {cattle.filter((c) => c.status === 'healthy').length}
-                </span>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                <Sparkles className="w-5 h-5" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1 text-xs font-semibold text-emerald-700 group-hover:translate-x-0.5 transition-transform mt-3">
-              <span>View healthy</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </div>
           </div>
@@ -348,6 +379,102 @@ export function AttendantDashboard() {
             </button>
           </div>
         )}
+
+        {/* Today's Tasks Section — Real Server Reminders */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm sm:text-base font-bold text-foreground tracking-tight uppercase">
+                Today's Tasks & Due Items
+              </h2>
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <button
+              onClick={() => navigate('/reminders')}
+              className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5"
+            >
+              All tasks <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+
+          <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden divide-y divide-border">
+            {todayReminders.length === 0 ? (
+              <div className="p-8 text-center">
+                <Sparkles className="w-7 h-7 text-emerald-500 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-muted-foreground">All caught up!</p>
+                <p className="text-xs text-muted-foreground mt-1">No overdue or pending tasks for today</p>
+              </div>
+            ) : (
+              todayReminders.slice(0, 4).map((reminder) => {
+                let Icon = Syringe;
+                let iconBg = 'bg-accent/10 text-accent';
+                let badgeBg = '#FEF3C7'; let badgeText = '#92400E'; let badgeBorder = '#FDE68A';
+
+                if (reminder.status === 'overdue') {
+                  badgeBg = '#FEE2E2'; badgeText = '#991B1B'; badgeBorder = '#FECACA';
+                } else if (reminder.status === 'attention') {
+                  badgeBg = '#FFF7ED'; badgeText = '#9A3412'; badgeBorder = '#FED7AA';
+                }
+
+                if (reminder.type === 'breeding_followup') {
+                  Icon = HeartHandshake;
+                  iconBg = 'bg-[#1B5E20]/10 text-[#1B5E20]';
+                } else if (reminder.type === 'sick_cattle') {
+                  Icon = HeartPulse;
+                  iconBg = 'bg-destructive/10 text-destructive';
+                }
+
+                const statusLabel =
+                  reminder.status === 'overdue' ? 'OVERDUE' :
+                  reminder.status === 'due_today' ? 'DUE TODAY' :
+                  'ATTENTION';
+
+                return (
+                  <button
+                    key={reminder.id}
+                    onClick={() => navigate(`/cattle/profile/${reminder.cattleId}`)}
+                    className="w-full px-4 py-3.5 flex items-center justify-between hover:bg-muted/40 transition-colors text-left group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                          {reminder.cattleName}
+                        </h3>
+                        <p className="text-xs font-medium text-muted-foreground mt-0.5 truncate">
+                          {reminder.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                      <span
+                        className="px-2 py-0.5 rounded-md text-[11px] font-bold border"
+                        style={{ backgroundColor: badgeBg, color: badgeText, borderColor: badgeBorder }}
+                      >
+                        {statusLabel}
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                  </button>
+                );
+              })
+            )}
+
+            {todayReminders.length > 0 && (
+              <button
+                onClick={() => navigate('/reminders')}
+                className="w-full py-3 px-4 text-xs font-bold text-[#1B5E20] hover:bg-[#1B5E20]/5 text-center flex items-center justify-center gap-1 transition-colors"
+              >
+                <span>View all tasks & reminders</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </section>
+
 
         {/* Quick Task Actions Grid (Task oriented for attendant) */}
         <section className="space-y-3">

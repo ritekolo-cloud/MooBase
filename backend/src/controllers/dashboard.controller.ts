@@ -17,33 +17,56 @@ export class DashboardController {
           prisma.cattle.count({ where: { status: 'dead' } }),
         ]);
 
-      // 2. Today's date boundaries
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
-      const endOfToday = new Date();
-      endOfToday.setHours(23, 59, 59, 999);
+      // 2. UTC-normalized date boundaries (consistent regardless of server timezone)
+      const nowUtc = new Date();
+      const todayUtcStart = new Date(Date.UTC(nowUtc.getUTCFullYear(), nowUtc.getUTCMonth(), nowUtc.getUTCDate()));
+      const todayUtcEnd = new Date(todayUtcStart.getTime() + 86_400_000 - 1);
+      const in14DaysUtc = new Date(todayUtcStart.getTime() + 14 * 86_400_000);
 
-      // 3. Today's Milk Production
+      // 3. Today's Milk Production (using local day boundaries for milk logging)
       const todayMilkRecords = await prisma.milkProduction.findMany({
-        where: { date: { gte: startOfToday, lte: endOfToday } },
+        where: { date: { gte: todayUtcStart, lte: todayUtcEnd } },
         select: { quantity: true },
       });
       const todayMilkLiters = todayMilkRecords.reduce((sum, r) => sum + r.quantity, 0);
       const milkTodayCount = todayMilkRecords.length;
 
-      // 4. Overdue/Due Vaccinations (next due date is today or earlier)
-      const dueTodayCount = await prisma.vaccinationRecord.count({
-        where: { nextDueDate: { lte: endOfToday } },
-      });
+      // 4. Reminder counts — using same logic as ReminderController for consistency
+      //    dueToday:      vaccinations with nextDueDate = today exactly
+      //    overdueCount:  vaccinations with nextDueDate < today
+      //    upcomingCount: vaccinations with nextDueDate in next 14 days (exclusive of today)
+      //    attentionCount: sick cattle + pending breeding follow-ups (no due date)
+      const [dueTodayCount, overdueCount, upcomingCount, attentionSick, attentionBreeding] =
+        await Promise.all([
+          // Vaccinations due exactly today
+          prisma.vaccinationRecord.count({
+            where: { nextDueDate: { gte: todayUtcStart, lte: todayUtcEnd } },
+          }),
+          // Vaccinations past their due date
+          prisma.vaccinationRecord.count({
+            where: { nextDueDate: { lt: todayUtcStart } },
+          }),
+          // Vaccinations upcoming in next 14 days (after today)
+          prisma.vaccinationRecord.count({
+            where: { nextDueDate: { gt: todayUtcEnd, lte: in14DaysUtc } },
+          }),
+          // Sick cattle attention
+          prisma.cattle.count({ where: { status: 'sick' } }),
+          // Pending breeding follow-ups
+          prisma.breedingRecord.count({ where: { status: 'pending' } }),
+        ]);
+      const attentionCount = attentionSick + attentionBreeding;
+      const totalReminders = dueTodayCount + overdueCount + upcomingCount + attentionCount;
 
-      // 5. Today's total activity count
+      // 5. Today's total activity count (records created/administered today)
       const [healthToday, vaccinesToday, breedingToday, feedingToday] = await Promise.all([
-        prisma.healthRecord.count({ where: { createdAt: { gte: startOfToday, lte: endOfToday } } }),
-        prisma.vaccinationRecord.count({ where: { createdAt: { gte: startOfToday, lte: endOfToday } } }),
-        prisma.breedingRecord.count({ where: { createdAt: { gte: startOfToday, lte: endOfToday } } }),
-        prisma.feedingRecord.count({ where: { createdAt: { gte: startOfToday, lte: endOfToday } } }),
+        prisma.healthRecord.count({ where: { createdAt: { gte: todayUtcStart, lte: todayUtcEnd } } }),
+        prisma.vaccinationRecord.count({ where: { createdAt: { gte: todayUtcStart, lte: todayUtcEnd } } }),
+        prisma.breedingRecord.count({ where: { createdAt: { gte: todayUtcStart, lte: todayUtcEnd } } }),
+        prisma.feedingRecord.count({ where: { createdAt: { gte: todayUtcStart, lte: todayUtcEnd } } }),
       ]);
       const todayActivitiesCount = healthToday + vaccinesToday + milkTodayCount + breedingToday + feedingToday;
+
 
       // 6. Sick / Require Attention Cattle List
       const sickCattle = await prisma.cattle.findMany({
@@ -146,7 +169,12 @@ export class DashboardController {
           deadCount,
           todayMilkLiters,
           milkToday: milkTodayCount,
-          dueToday: dueTodayCount,
+          // Reminder counts — each is a distinct, accurate measurement
+          dueToday: dueTodayCount,        // vaccinations with nextDueDate = today
+          overdueCount,                    // vaccinations past nextDueDate
+          upcomingCount,                   // vaccinations in next 14 days
+          attentionCount,                  // sick cattle + pending breeding
+          totalReminders,                  // all unresolved items
           todayActivities: todayActivitiesCount,
           sickCattleList: sickCattle.map((c) => ({
             id: c.id, tagNumber: c.tagNumber, name: c.name,
@@ -162,6 +190,7 @@ export class DashboardController {
           serverTimestamp: new Date().toISOString(),
         },
       });
+
     } catch (error) {
       next(error);
     }
