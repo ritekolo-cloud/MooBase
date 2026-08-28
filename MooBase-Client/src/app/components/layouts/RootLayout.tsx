@@ -8,9 +8,14 @@ export function RootLayout() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   useEffect(() => {
-    storage.init();
+    // storage.init() is intentionally NOT called — no mock data should be seeded.
+    // Data is loaded from PostgreSQL via farmDataService on each authenticated screen.
 
-    const handleOnline = () => setIsOffline(false);
+    const handleOnline = () => {
+      setIsOffline(false);
+      // Trigger revalidation across all screens when we reconnect
+      window.dispatchEvent(new CustomEvent('farm-data-updated'));
+    };
     const handleOffline = () => setIsOffline(true);
 
     window.addEventListener('online', handleOnline);

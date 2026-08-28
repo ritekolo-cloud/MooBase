@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { storage, Cattle, Record as CattleRecord } from '../utils/storage';
 import { useEffect, useState } from 'react';
+import { farmDataService, DashboardSummary } from '../services/farmDataService';
 
 // Custom Cow Silhouette Icon for the branding
 function CowBrandIcon({ className = 'w-6 h-6' }: { className?: string }) {
@@ -76,6 +77,18 @@ export function ManagerDashboard() {
   const [cattle, setCattle] = useState<Cattle[]>(storage.getCattle());
   const [records, setRecords] = useState<CattleRecord[]>(storage.getRecords());
   const [user, setUser] = useState(storage.getUser());
+  const [serverStats, setServerStats] = useState<DashboardSummary | null>(null);
+
+  // Authoritative data fetch from PostgreSQL via backend
+  const fetchServerData = async () => {
+    const result = await farmDataService.getDashboardSummary();
+    if (result.ok) {
+      setServerStats(result.data);
+      setCattle(storage.getCattle());
+      setRecords(storage.getRecords());
+    }
+    setUser(storage.getUser());
+  };
 
   useEffect(() => {
     if (!user || user.role !== 'manager') {
@@ -84,33 +97,43 @@ export function ManagerDashboard() {
   }, [user, navigate]);
 
   useEffect(() => {
-    // 1. Initial authoritative backend synchronization
-    storage.syncWithBackend();
+    // 1. Immediate authoritative fetch
+    fetchServerData();
 
-    // 2. Handlers for live updates & window focus
-    const handleDataUpdate = () => {
-      setUser(storage.getUser());
-      setCattle(storage.getCattle());
-      setRecords(storage.getRecords());
+    // 2. Periodic revalidation every 30 seconds
+    const interval = setInterval(fetchServerData, 30_000);
+
+    // 3. Revalidate on window focus (tab switch, device wake)
+    const handleFocus = () => fetchServerData();
+    const handleVisible = () => {
+      if (document.visibilityState === 'visible') fetchServerData();
     };
 
-    const handleFocus = () => {
-      storage.syncWithBackend();
+    // 4. Revalidate when another screen mutates data
+    const handleDataUpdate = () => {
+      setCattle(storage.getCattle());
+      setRecords(storage.getRecords());
+      setUser(storage.getUser());
+      fetchServerData();
     };
 
     window.addEventListener('profile-updated', handleDataUpdate);
     window.addEventListener('farm-data-updated', handleDataUpdate);
     window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisible);
 
     return () => {
+      clearInterval(interval);
       window.removeEventListener('profile-updated', handleDataUpdate);
       window.removeEventListener('farm-data-updated', handleDataUpdate);
       window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisible);
     };
   }, []);
 
-  const sickCattle = cattle.filter((c) => c.status === 'sick');
-  const requireAttentionCount = sickCattle.length;
+  // Use authoritative server stats when available; fall back to local cache for offline
+  const sickCattle = serverStats?.sickCattleList || cattle.filter((c) => c.status === 'sick');
+  const requireAttentionCount = serverStats?.requireAttention ?? sickCattle.length;
 
   const todayDateStr = new Date().toDateString();
   const todayRecords = records.filter(
@@ -121,13 +144,12 @@ export function ManagerDashboard() {
     (r) => r.type === 'milk' && new Date(r.date).toDateString() === todayDateStr
   );
 
-  const dueTodayCount = todayRecords.length;
-
   const stats = {
-    totalCattle: cattle.length,
-    requireAttention: requireAttentionCount,
-    milkToday: todayMilkRecords.length,
-    dueToday: dueTodayCount,
+    // PostgreSQL is authoritative when online; localStorage cache is the fallback
+    totalCattle: serverStats?.totalCattle ?? cattle.length,
+    requireAttention: serverStats?.requireAttention ?? requireAttentionCount,
+    milkToday: serverStats?.milkToday ?? todayMilkRecords.length,
+    dueToday: serverStats?.dueToday ?? todayRecords.length,
   };
 
   // Build Today's activities list dynamically from existing data

@@ -13,6 +13,7 @@ import recordRouter from './routes/record.routes';
 import syncRouter from './routes/sync.routes';
 import reportRouter from './routes/report.routes';
 import userRouter from './routes/user.routes';
+import dashboardRouter from './routes/dashboard.routes';
 
 const app = express();
 
@@ -30,9 +31,7 @@ app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (curl, Postman, mobile apps, etc.)
       if (!origin) return callback(null, true);
-      // Explicitly allow any *.onrender.com subdomain plus local dev origins
       if (
         allowedOrigins.includes(origin) ||
         origin.endsWith('.onrender.com') ||
@@ -59,17 +58,28 @@ app.use('/api/cattle', cattleRouter);
 app.use('/api/sync', syncRouter);
 app.use('/api/reports', reportRouter);
 app.use('/api/users', userRouter);
+app.use('/api/dashboard', dashboardRouter);
 
-// Mount records (health, vaccination, milk, breeding) directly under /api
+// Mount records (health, vaccination, milk, breeding, feeding) directly under /api
 app.use('/api', recordRouter);
 
-// Base health check with database connection validation
+// Health check — accurately reports database connectivity
 app.get('/health-check', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.status(200).json({ status: 'ok', database: 'connected', timestamp: new Date() });
   } catch (err: any) {
-    res.status(200).json({ status: 'ok', database: 'disconnected', dbError: err.message, timestamp: new Date() });
+    res.status(503).json({ status: 'degraded', database: 'disconnected', dbError: err.message, timestamp: new Date() });
+  }
+});
+
+// Also expose at /api/health for frontend polling
+app.get('/api/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ status: 'ok', database: 'connected', timestamp: new Date() });
+  } catch (err: any) {
+    res.status(503).json({ status: 'degraded', database: 'disconnected', dbError: err.message, timestamp: new Date() });
   }
 });
 
@@ -81,3 +91,4 @@ app.use((req, _res, next) => {
 app.use(errorHandler);
 
 export default app;
+

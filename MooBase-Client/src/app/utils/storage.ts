@@ -52,9 +52,15 @@ const STORAGE_KEYS = {
 };
 
 export const storage = {
-  // Initialization
+  /**
+   * init() — intentionally a no-op.
+   * Data is loaded on demand from the PostgreSQL backend via farmDataService.
+   * localStorage is used ONLY as an offline read cache, never as a data source.
+   * Mock/demo data is never injected here.
+   */
   init: () => {
-    initializeMockData();
+    // No mock data. No seed data. Offline cache is populated on first successful
+    // server fetch and remains empty until the user authenticates.
   },
 
   // Authoritative server synchronization
@@ -407,120 +413,7 @@ export const storage = {
   },
 };
 
-// Initialize with mock data if empty
-export const initializeMockData = () => {
-  if (storage.getCattle().length === 0) {
-    const mockCattle: Cattle[] = [
-      {
-        id: 'C001',
-        tagNumber: 'TAG-001',
-        name: 'Bella',
-        breed: 'Friesian',
-        age: 3,
-        gender: 'female',
-        status: 'healthy',
-        lastUpdate: new Date().toISOString(),
-      },
-      {
-        id: 'C002',
-        tagNumber: 'TAG-002',
-        name: 'Daisy',
-        breed: 'Jersey',
-        age: 4,
-        gender: 'female',
-        status: 'lactating',
-        lastUpdate: new Date().toISOString(),
-      },
-      {
-        id: 'C003',
-        tagNumber: 'TAG-003',
-        name: 'Rose',
-        breed: 'Ankole',
-        age: 2,
-        gender: 'female',
-        status: 'healthy',
-        lastUpdate: new Date().toISOString(),
-      },
-      {
-        id: 'C004',
-        tagNumber: 'TAG-004',
-        name: 'Luna',
-        breed: 'Friesian',
-        age: 5,
-        gender: 'female',
-        status: 'vaccinated',
-        lastUpdate: new Date(Date.now() - 86400000).toISOString(),
-      },
-      {
-        id: 'C005',
-        tagNumber: 'TAG-005',
-        name: 'Molly',
-        breed: 'Crossbreed',
-        age: 3,
-        gender: 'female',
-        status: 'sick',
-        lastUpdate: new Date(Date.now() - 172800000).toISOString(),
-      },
-      {
-        id: 'C006',
-        tagNumber: 'TAG-006',
-        name: 'Bruno',
-        breed: 'Boran Bull',
-        age: 4,
-        gender: 'male',
-        status: 'healthy',
-        lastUpdate: new Date().toISOString(),
-      },
-    ];
-    storage.setCattle(mockCattle);
-
-    const mockRecords: Record[] = [
-      {
-        id: 'R001',
-        cattleId: 'C001',
-        type: 'vaccination',
-        date: new Date(Date.now() - 604800000).toISOString(),
-        notes: 'Annual vaccination completed',
-        synced: true,
-        createdBy: 'attendant1',
-      },
-      {
-        id: 'R002',
-        cattleId: 'C002',
-        type: 'milk',
-        date: new Date().toISOString(),
-        notes: '12 liters morning',
-        synced: true,
-        createdBy: 'attendant1',
-        data: { liters: 12 },
-      },
-      {
-        id: 'R003',
-        cattleId: 'C005',
-        type: 'health',
-        date: new Date(Date.now() - 172800000).toISOString(),
-        notes: 'Showing signs of fever, isolated from herd',
-        synced: true,
-        createdBy: 'attendant1',
-      },
-    ];
-    storage.setRecords(mockRecords);
-  }
-
-  // Initialize users list only if completely empty and no user exists
-  if (storage.getUsers().length === 0) {
-    const activeUser = storage.getUser();
-    if (activeUser) {
-      storage.setUsers([activeUser]);
-    } else {
-      const mockUsers: User[] = [
-        { id: 'u001', username: 'manager@moobase.com', role: 'manager', name: 'Kabaka Ronald' },
-        { id: 'u000', username: 'admin@moobase.com', role: 'manager', name: 'Farm Manager' },
-        { id: 'u002', username: 'attendant1@moobase.com', role: 'attendant', name: 'Mukasa John' },
-        { id: 'u003', username: 'attendant2@moobase.com', role: 'attendant', name: 'Nalule Sarah' },
-        { id: 'u004', username: 'attendant@moobase.com', role: 'attendant', name: 'Attendant User' },
-      ];
-      storage.setUsers(mockUsers);
-    }
-  }
-};
+// initializeMockData — permanently stubbed out.
+// Do NOT seed mock cattle or records here.
+// All data comes from PostgreSQL via farmDataService.
+export const initializeMockData = () => {};

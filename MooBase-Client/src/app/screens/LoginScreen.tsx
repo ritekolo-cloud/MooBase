@@ -5,6 +5,7 @@ import { Eye, EyeOff, Leaf } from 'lucide-react';
 import { storage } from '../utils/storage';
 import { API_BASE_URL } from '../config/api';
 import { toast } from 'sonner';
+import { farmDataService } from '../services/farmDataService';
 
 export function LoginScreen() {
   const navigate = useNavigate();
@@ -53,11 +54,16 @@ export function LoginScreen() {
       localStorage.setItem('moobase_refresh_token', resData.refreshToken);
       storage.setOfflineMode(false);
 
-      // Sync authoritative farm data from server
+      // IMPORTANT: Clear any stale mock/previous-session data from localStorage
+      // so a fresh server fetch overwrites it rather than mixing with cached phantom data.
+      localStorage.removeItem('moobase_cattle');
+      localStorage.removeItem('moobase_records');
+
+      // Pull authoritative farm data from PostgreSQL after login
       try {
-        await storage.syncWithBackend();
+        await farmDataService.revalidate();
       } catch (syncErr) {
-        console.warn('Non-blocking: Initial sync on login deferred:', syncErr);
+        console.warn('Non-blocking: Initial server revalidation deferred:', syncErr);
       }
 
       toast.success('Logged in successfully!');
