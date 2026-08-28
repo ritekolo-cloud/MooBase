@@ -58,6 +58,105 @@ const ensureNewCattleExists = async (cattleId?: string) => {
 };
 
 export class RecordController {
+  // --- GET ALL RECORDS ---
+  static async getAll(_req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      const [health, vaccination, milk, breeding, feeding] = await Promise.all([
+        prisma.healthRecord.findMany({ orderBy: { date: 'desc' } }),
+        prisma.vaccinationRecord.findMany({ orderBy: { dateAdministered: 'desc' } }),
+        prisma.milkProduction.findMany({ orderBy: { date: 'desc' } }),
+        prisma.breedingRecord.findMany({ orderBy: { date: 'desc' } }),
+        prisma.feedingRecord.findMany({ orderBy: { date: 'desc' } }),
+      ]);
+
+      const records: any[] = [];
+
+      health.forEach((r) => {
+        records.push({
+          id: r.id,
+          cattleId: r.cattleId,
+          type: 'health',
+          date: r.date.toISOString(),
+          notes: r.description,
+          synced: true,
+          createdBy: 'system',
+          data: {
+            treatment: r.treatment,
+            vetName: r.vetName,
+          },
+        });
+      });
+
+      vaccination.forEach((r) => {
+        records.push({
+          id: r.id,
+          cattleId: r.cattleId,
+          type: 'vaccination',
+          date: r.dateAdministered.toISOString(),
+          notes: `Vaccine administered: ${r.vaccineName}`,
+          synced: true,
+          createdBy: 'system',
+          data: {
+            vaccineName: r.vaccineName,
+            nextDueDate: r.nextDueDate.toISOString(),
+          },
+        });
+      });
+
+      milk.forEach((r) => {
+        records.push({
+          id: r.id,
+          cattleId: r.cattleId,
+          type: 'milk',
+          date: r.date.toISOString(),
+          notes: `${r.quantity} liters recorded`,
+          synced: true,
+          createdBy: 'system',
+          data: {
+            liters: r.quantity,
+          },
+        });
+      });
+
+      breeding.forEach((r) => {
+        records.push({
+          id: r.id,
+          cattleId: r.cattleId,
+          type: 'breeding',
+          date: r.date.toISOString(),
+          notes: `Breeding status: ${r.status}`,
+          synced: true,
+          createdBy: 'system',
+          data: {
+            partnerCattleId: r.partnerCattleId,
+            status: r.status,
+          },
+        });
+      });
+
+      feeding.forEach((r) => {
+        records.push({
+          id: r.id,
+          cattleId: r.cattleId,
+          type: 'feeding',
+          date: r.date.toISOString(),
+          notes: r.notes,
+          synced: true,
+          createdBy: 'system',
+        });
+      });
+
+      records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      res.status(200).json({
+        status: 'success',
+        data: records,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // --- HEALTH RECORDS ---
   static async createHealth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {

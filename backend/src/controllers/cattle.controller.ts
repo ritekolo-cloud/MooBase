@@ -155,26 +155,30 @@ export class CattleController {
     try {
       const data = cattleSchema.parse(req.body);
 
+      // Generate ID if missing
+      const id = data.id || `C${String(Date.now()).slice(-4)}`;
+      const tagNumber = data.tagNumber || `TAG-${id}`;
+
       // Check if tag number already exists
       const existingCattle = await prisma.cattle.findUnique({
-        where: { tagNumber: data.tagNumber },
+        where: { tagNumber },
       });
       if (existingCattle) {
-        throw new AppError(`Cattle with tag number ${data.tagNumber} already exists`, 400);
+        throw new AppError(`Cattle with tag number ${tagNumber} already exists`, 400);
       }
 
       // Check if ID is unique
       const existingId = await prisma.cattle.findUnique({
-        where: { id: data.id },
+        where: { id },
       });
       if (existingId) {
-        throw new AppError(`Cattle with ID ${data.id} already exists`, 400);
+        throw new AppError(`Cattle with ID ${id} already exists`, 400);
       }
 
       const cattle = await prisma.cattle.create({
         data: {
-          id: data.id,
-          tagNumber: data.tagNumber,
+          id,
+          tagNumber,
           name: data.name,
           breed: data.breed,
           age: data.age,

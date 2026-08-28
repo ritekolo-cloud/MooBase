@@ -84,14 +84,28 @@ export function ManagerDashboard() {
   }, [user, navigate]);
 
   useEffect(() => {
-    const handleProfileUpdate = () => {
+    // 1. Initial authoritative backend synchronization
+    storage.syncWithBackend();
+
+    // 2. Handlers for live updates & window focus
+    const handleDataUpdate = () => {
       setUser(storage.getUser());
       setCattle(storage.getCattle());
       setRecords(storage.getRecords());
     };
-    window.addEventListener('profile-updated', handleProfileUpdate);
+
+    const handleFocus = () => {
+      storage.syncWithBackend();
+    };
+
+    window.addEventListener('profile-updated', handleDataUpdate);
+    window.addEventListener('farm-data-updated', handleDataUpdate);
+    window.addEventListener('focus', handleFocus);
+
     return () => {
-      window.removeEventListener('profile-updated', handleProfileUpdate);
+      window.removeEventListener('profile-updated', handleDataUpdate);
+      window.removeEventListener('farm-data-updated', handleDataUpdate);
+      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 

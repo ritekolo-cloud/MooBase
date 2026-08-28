@@ -12,6 +12,7 @@ import {
   Wheat,
 } from 'lucide-react';
 import { storage, Record as CattleRecord } from '../utils/storage';
+import { API_BASE_URL } from '../config/api';
 import { toast } from 'sonner';
 
 export function AddRecordScreen() {
@@ -64,50 +65,156 @@ export function AddRecordScreen() {
     }
 
     setIsSaving(true);
-
+    const token = localStorage.getItem('moobase_access_token');
     const dataPayload = additionalData ? JSON.parse(additionalData) : undefined;
+    const recordDate = new Date(date).toISOString();
 
     if (isEditMode && id) {
-      storage.updateRecord(id, {
+      const updates = {
         cattleId,
         type: recordType,
-        date: new Date(date).toISOString(),
+        date: recordDate,
         notes,
         data: dataPayload,
-      });
+      };
 
-      setTimeout(() => {
-        setIsSaving(false);
-        toast.success('Record updated successfully!');
-        navigate(`/cattle/profile/${cattleId}`, { replace: true });
-      }, 800);
+      let syncedOnline = false;
+      if (token && navigator.onLine) {
+        try {
+          const endpoint = `${API_BASE_URL}/records/${recordType}/${id}`;
+          const bodyPayload: any = { cattleId, date: recordDate };
+          if (recordType === 'health') {
+            bodyPayload.description = notes;
+            bodyPayload.treatment = dataPayload?.treatment || 'General Checkup';
+            bodyPayload.vetName = dataPayload?.vetName || user?.name || 'Attendant';
+          } else if (recordType === 'vaccination') {
+            bodyPayload.vaccineName = dataPayload?.vaccineName || notes;
+            bodyPayload.dateAdministered = recordDate;
+            bodyPayload.nextDueDate = dataPayload?.nextDueDate || new Date(Date.now() + 180 * 86400000).toISOString();
+          } else if (recordType === 'milk') {
+            bodyPayload.quantity = Number(dataPayload?.liters || parseFloat(notes) || 10);
+          } else if (recordType === 'breeding') {
+            bodyPayload.status = dataPayload?.status || notes;
+            bodyPayload.partnerCattleId = dataPayload?.partnerCattleId || null;
+          } else if (recordType === 'feeding') {
+            bodyPayload.notes = notes;
+          }
+
+          const res = await fetch(endpoint, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(bodyPayload),
+          });
+          if (res.ok) syncedOnline = true;
+        } catch (err) {
+          console.warn('Online record update failed, queued for sync:', err);
+        }
+      }
+
+      storage.updateRecord(id, updates);
+
+      if (!syncedOnline) {
+        storage.addToSyncQueue({
+          id: `sync_${Date.now()}`,
+          type: 'update',
+          entity: 'record',
+          data: { id, ...updates },
+          status: 'pending',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      storage.syncWithBackend();
+      setIsSaving(false);
+      toast.success('Record updated successfully!');
+      navigate(`/cattle/profile/${cattleId}`, { replace: true });
     } else {
+      const newRecordId = `R${Date.now()}`;
       const newRecord: CattleRecord = {
-        id: `R${Date.now()}`,
+        id: newRecordId,
         cattleId,
         type: recordType,
-        date: new Date(date).toISOString(),
+        date: recordDate,
         notes,
         synced: false,
         createdBy: user?.id || 'unknown',
         data: dataPayload,
       };
 
+      let syncedOnline = false;
+      if (token && navigator.onLine) {
+        try {
+          const endpoint = `${API_BASE_URL}/records/${recordType}`;
+          const bodyPayload: any = {
+            id: newRecordId,
+            cattleId,
+            date: recordDate,
+          };
+          if (recordType === 'health') {
+            bodyPayload.description = notes;
+            bodyPayload.treatment = dataPayload?.treatment || 'General Checkup';
+            bodyPayload.vetName = dataPayload?.vetName || user?.name || 'Attendant';
+          } else if (recordType === 'vaccination') {
+            bodyPayload.vaccineName = dataPayload?.vaccineName || notes;
+            bodyPayload.dateAdministered = recordDate;
+            bodyPayload.nextDueDate = dataPayload?.nextDueDate || new Date(Date.now() + 180 * 86400000).toISOString();
+          } else if (recordType === 'milk') {
+            bodyPayload.quantity = Number(dataPayload?.liters || parseFloat(notes) || 10);
+          } else if (recordType === 'breeding') {
+            bodyPayload.status = dataPayload?.status || notes;
+            bodyPayload.partnerCattleId = dataPayload?.partnerCattleId || null;
+          } else if (recordType === 'feeding') {
+            bodyPayload.notes = notes;
+          }
+
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(bodyPayload),
+          });
+          if (res.ok) {
+            syncedOnline = true;
+            newRecord.synced = true;
+          }
+        } catch (err) {
+          console.warn('Online record creation failed, queued for sync:', err);
+        }
+      }
+
       storage.addRecord(newRecord);
 
-      // Update cattle last update time
-      storage.updateCattle(cattleId, {
-        lastUpdate: new Date().toISOString(),
-      });
+      // Update cattle status locally
+      if (recordType === 'health') {
+        storage.updateCattle(cattleId, { status: 'sick', lastUpdate: new Date().toISOString() });
+      } else if (recordType === 'vaccination') {
+        storage.updateCattle(cattleId, { status: 'vaccinated', lastUpdate: new Date().toISOString() });
+      } else if (recordType === 'milk') {
+        storage.updateCattle(cattleId, { status: 'lactating', lastUpdate: new Date().toISOString() });
+      } else {
+        storage.updateCattle(cattleId, { lastUpdate: new Date().toISOString() });
+      }
 
-      setTimeout(() => {
-        setIsSaving(false);
-        toast.success('Activity record saved successfully!', {
-          description: 'Saved locally. Will sync automatically when online.',
+      if (!syncedOnline) {
+        storage.addToSyncQueue({
+          id: `sync_${Date.now()}`,
+          type: 'create',
+          entity: 'record',
+          data: newRecord,
+          status: 'pending',
+          timestamp: new Date().toISOString(),
         });
+      }
 
-        navigate(`/cattle/profile/${cattleId}`, { replace: true });
-      }, 800);
+      storage.syncWithBackend();
+      setIsSaving(false);
+      toast.success('Activity record saved successfully!');
+      navigate(`/cattle/profile/${cattleId}`, { replace: true });
     }
   };
 

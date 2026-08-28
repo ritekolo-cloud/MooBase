@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion } from 'motion/react';
 import {
@@ -18,9 +18,29 @@ export function CattleRecordsScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const user = storage.getUser();
-  const [cattle] = useState(storage.getCattle());
+  const [cattle, setCattle] = useState(storage.getCattle());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>(location.state?.filter || 'all');
+
+  useEffect(() => {
+    storage.syncWithBackend();
+
+    const handleUpdate = () => {
+      setCattle(storage.getCattle());
+    };
+
+    const handleFocus = () => {
+      storage.syncWithBackend();
+    };
+
+    window.addEventListener('farm-data-updated', handleUpdate);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('farm-data-updated', handleUpdate);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
   const filters = [
     { id: 'all', label: 'All Herd', count: cattle.length },

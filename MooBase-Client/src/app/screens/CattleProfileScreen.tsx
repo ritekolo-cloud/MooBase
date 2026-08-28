@@ -17,6 +17,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { storage, Cattle, Record as CattleRecord } from '../utils/storage';
+import { API_BASE_URL } from '../config/api';
 
 export function CattleProfileScreen() {
   const { id } = useParams<{ id: string }>();
@@ -28,12 +29,57 @@ export function CattleProfileScreen() {
 
   useEffect(() => {
     if (id) {
+      // 1. Initial load from local cache
       const cattleData = storage.getCattleById(id);
       setCattle(cattleData);
 
       const cattleRecords = storage.getRecordsByCattleId(id);
       setRecords(cattleRecords);
+
+      // 2. Fetch fresh detail from backend
+      const token = localStorage.getItem('moobase_access_token');
+      if (token && navigator.onLine) {
+        fetch(`${API_BASE_URL}/cattle/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((json) => {
+            if (json?.status === 'success' && json.data) {
+              const freshCattle: Cattle = {
+                id: json.data.id,
+                tagNumber: json.data.tagNumber || `TAG-${json.data.id}`,
+                name: json.data.name,
+                breed: json.data.breed,
+                age: json.data.age,
+                gender: json.data.gender,
+                status: json.data.status,
+                lastUpdate: json.data.lastUpdate || new Date().toISOString(),
+              };
+              setCattle(freshCattle);
+              storage.updateCattle(id, freshCattle);
+
+              if (Array.isArray(json.data.records)) {
+                setRecords(json.data.records);
+                const otherRecords = storage.getRecords().filter((r) => r.cattleId !== id);
+                storage.setRecords([...otherRecords, ...json.data.records]);
+              }
+            }
+          })
+          .catch((err) => console.warn('Non-fatal: Could not refresh cattle details:', err));
+      }
     }
+
+    const handleUpdate = () => {
+      if (id) {
+        setCattle(storage.getCattleById(id));
+        setRecords(storage.getRecordsByCattleId(id));
+      }
+    };
+
+    window.addEventListener('farm-data-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('farm-data-updated', handleUpdate);
+    };
   }, [id]);
 
   if (!cattle) {

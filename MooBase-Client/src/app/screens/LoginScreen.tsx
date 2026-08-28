@@ -53,37 +53,11 @@ export function LoginScreen() {
       localStorage.setItem('moobase_refresh_token', resData.refreshToken);
       storage.setOfflineMode(false);
 
-      // Seed local cache with cattle and records from server
+      // Sync authoritative farm data from server
       try {
-        const cattleRes = await fetch(`${API_BASE_URL}/cattle`, {
-          headers: {
-            Authorization: `Bearer ${resData.accessToken}`,
-          },
-        });
-        if (cattleRes.ok) {
-          const cattleData = await cattleRes.json();
-          if (cattleData.status === 'success' && Array.isArray(cattleData.data)) {
-            storage.setCattle(cattleData.data);
-
-            const allRecords: any[] = [];
-            for (const animal of cattleData.data) {
-              const detailRes = await fetch(`${API_BASE_URL}/cattle/${animal.id}`, {
-                headers: {
-                  Authorization: `Bearer ${resData.accessToken}`,
-                },
-              });
-              if (detailRes.ok) {
-                const detailData = await detailRes.json();
-                if (detailData.status === 'success' && detailData.data.records) {
-                  allRecords.push(...detailData.data.records);
-                }
-              }
-            }
-            storage.setRecords(allRecords);
-          }
-        }
-      } catch (fetchErr) {
-        console.warn('Non-blocking: Failed to seed cattle cache on login:', fetchErr);
+        await storage.syncWithBackend();
+      } catch (syncErr) {
+        console.warn('Non-blocking: Initial sync on login deferred:', syncErr);
       }
 
       toast.success('Logged in successfully!');

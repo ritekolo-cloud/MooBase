@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '../config/api';
+
 // Offline-first storage utilities
 
 export interface User {
@@ -34,7 +36,7 @@ export interface Record {
 export interface SyncQueueItem {
   id: string;
   type: 'create' | 'update' | 'delete';
-  entity: 'cattle' | 'record';
+  entity: 'cattle' | 'record' | 'user';
   data: any;
   status: 'pending' | 'syncing' | 'completed' | 'failed';
   timestamp: string;
@@ -53,6 +55,101 @@ export const storage = {
   // Initialization
   init: () => {
     initializeMockData();
+  },
+
+  // Authoritative server synchronization
+  syncWithBackend: async (): Promise<{ cattle: Cattle[]; records: Record[] } | null> => {
+    const token = localStorage.getItem('moobase_access_token');
+    if (!token) return null;
+
+    try {
+      // 1. If online, flush any pending items from syncQueue first
+      const queue = storage.getSyncQueue();
+      const pendingItems = queue.filter((item) => item.status === 'pending' || item.status === 'failed');
+      if (pendingItems.length > 0 && navigator.onLine) {
+        try {
+          const pushRes = await fetch(`${API_BASE_URL}/sync/push`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(
+              pendingItems.map((item) => ({
+                id: item.id,
+                type: item.type,
+                entity: item.entity,
+                data: item.data,
+                timestamp: item.timestamp,
+              }))
+            ),
+          });
+          if (pushRes.ok) {
+            storage.clearCompletedSyncItems();
+          }
+        } catch (pushErr) {
+          console.warn('Background sync push deferred:', pushErr);
+        }
+      }
+
+      // 2. Fetch authoritative cattle from server
+      const cattleRes = await fetch(`${API_BASE_URL}/cattle`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!cattleRes.ok) return null;
+      const cattleJson = await cattleRes.json();
+      if (cattleJson.status !== 'success' || !Array.isArray(cattleJson.data)) return null;
+
+      const serverCattle: Cattle[] = cattleJson.data;
+
+      // 3. Fetch authoritative records from server
+      let serverRecords: Record[] = [];
+      try {
+        const recordsRes = await fetch(`${API_BASE_URL}/records`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (recordsRes.ok) {
+          const recordsJson = await recordsRes.json();
+          if (recordsJson.status === 'success' && Array.isArray(recordsJson.data)) {
+            serverRecords = recordsJson.data;
+          }
+        } else {
+          // Fallback: Query per cattle
+          for (const animal of serverCattle) {
+            const detailRes = await fetch(`${API_BASE_URL}/cattle/${animal.id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (detailRes.ok) {
+              const detailData = await detailRes.json();
+              if (detailData.status === 'success' && Array.isArray(detailData.data?.records)) {
+                serverRecords.push(...detailData.data.records);
+              }
+            }
+          }
+        }
+      } catch (recErr) {
+        console.warn('Could not fetch records list, keeping current cache:', recErr);
+        serverRecords = storage.getRecords();
+      }
+
+      // 4. Update local storage cache with authoritative data
+      storage.setCattle(serverCattle);
+      storage.setRecords(serverRecords);
+
+      // 5. Notify all active listeners across screens
+      window.dispatchEvent(
+        new CustomEvent('farm-data-updated', {
+          detail: { cattle: serverCattle, records: serverRecords },
+        })
+      );
+
+      return { cattle: serverCattle, records: serverRecords };
+    } catch (err) {
+      console.warn('Non-fatal: Server sync skipped (offline mode):', err);
+      return null;
+    }
   },
 
   // User management
@@ -125,6 +222,37 @@ export const storage = {
 
   getCattleById: (id: string): Cattle | undefined => {
     return storage.getCattle().find(c => c.id === id);
+  },
+
+  deleteCattle: (id: string) => {
+    const allCattle = storage.getCattle().filter(c => c.id !== id);
+    storage.setCattle(allCattle);
+
+    const allRecords = storage.getRecords().filter(r => r.cattleId !== id);
+    storage.setRecords(allRecords);
+
+    storage.addToSyncQueue({
+      id: `sync_${Date.now()}`,
+      type: 'delete',
+      entity: 'cattle',
+      data: { id },
+      status: 'pending',
+      timestamp: new Date().toISOString(),
+    });
+  },
+
+  deleteRecord: (id: string, type?: string) => {
+    const allRecords = storage.getRecords().filter(r => r.id !== id);
+    storage.setRecords(allRecords);
+
+    storage.addToSyncQueue({
+      id: `sync_${Date.now()}`,
+      type: 'delete',
+      entity: 'record',
+      data: { id, type },
+      status: 'pending',
+      timestamp: new Date().toISOString(),
+    });
   },
 
   // Records management

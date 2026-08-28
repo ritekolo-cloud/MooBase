@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Save, Heart, ShieldAlert, CheckCircle2, Droplets, Sparkles } from 'lucide-react';
+import { ArrowLeft, Save, Heart, ShieldAlert, CheckCircle2, Droplets } from 'lucide-react';
 import { storage, Cattle } from '../utils/storage';
+import { API_BASE_URL } from '../config/api';
 import { toast } from 'sonner';
 
 export function AddCattleScreen() {
@@ -30,7 +31,7 @@ export function AddCattleScreen() {
     }
   }, [id, isEditMode]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name || !breed || age <= 0) {
@@ -39,73 +40,115 @@ export function AddCattleScreen() {
     }
 
     setIsSaving(true);
+    const token = localStorage.getItem('moobase_access_token');
+    const finalGender = gender === 'male' ? 'male' : 'female';
+    const finalStatus = gender === 'male' && status === 'lactating' ? 'healthy' : status;
 
     if (isEditMode && id) {
-      storage.updateCattle(id, {
+      const updates = {
         name,
         breed,
         age,
-        gender,
-        status: gender === 'male' && status === 'lactating' ? 'healthy' : status,
+        gender: finalGender,
+        status: finalStatus,
         lastUpdate: new Date().toISOString(),
-      });
+      };
 
-      // Add to sync queue for offline sync
-      const updatedCattle = storage.getCattleById(id);
-      storage.addToSyncQueue({
-        id: `sync_${Date.now()}`,
-        type: 'update',
-        entity: 'cattle',
-        data: updatedCattle,
-        status: 'pending',
-        timestamp: new Date().toISOString(),
-      });
+      let syncedOnline = false;
+      if (token && navigator.onLine) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/cattle/${id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(updates),
+          });
+          if (res.ok) syncedOnline = true;
+        } catch (netErr) {
+          console.warn('Online cattle update failed, queued for offline sync:', netErr);
+        }
+      }
 
-      setTimeout(() => {
-        setIsSaving(false);
-        toast.success('Cattle profile updated successfully!');
-        navigate(`/cattle/profile/${id}`, { replace: true });
-      }, 800);
+      storage.updateCattle(id, updates);
+
+      if (!syncedOnline) {
+        storage.addToSyncQueue({
+          id: `sync_${Date.now()}`,
+          type: 'update',
+          entity: 'cattle',
+          data: { id, ...updates },
+          status: 'pending',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Refresh cache in background
+      storage.syncWithBackend();
+
+      setIsSaving(false);
+      toast.success('Cattle profile updated successfully!');
+      navigate(`/cattle/profile/${id}`, { replace: true });
     } else {
       const allCattle = storage.getCattle();
       
-      // Generate next sequential ID
       const nextIdNumber = allCattle.reduce((max, animal) => {
         const num = parseInt(animal.id.replace('C', ''), 10);
         return isNaN(num) ? max : Math.max(max, num);
       }, 6) + 1;
       const newId = `C${String(nextIdNumber).padStart(3, '0')}`;
+      const newTag = `TAG-${String(nextIdNumber).padStart(3, '0')}`;
 
       const newAnimal: Cattle = {
         id: newId,
-        tagNumber: `TAG-${String(nextIdNumber).padStart(3, '0')}`,
+        tagNumber: newTag,
         name,
         breed,
         age,
-        gender,
-        status: gender === 'male' && status === 'lactating' ? 'healthy' : status,
+        gender: finalGender,
+        status: finalStatus,
         lastUpdate: new Date().toISOString(),
       };
 
+      let syncedOnline = false;
+      if (token && navigator.onLine) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/cattle`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(newAnimal),
+          });
+          if (res.ok) syncedOnline = true;
+        } catch (netErr) {
+          console.warn('Online cattle creation failed, queued for offline sync:', netErr);
+        }
+      }
+
       storage.addCattle(newAnimal);
 
-      // Add to sync queue for offline sync
-      storage.addToSyncQueue({
-        id: `sync_${Date.now()}`,
-        type: 'create',
-        entity: 'cattle',
-        data: newAnimal,
-        status: 'pending',
-        timestamp: new Date().toISOString(),
-      });
-
-      setTimeout(() => {
-        setIsSaving(false);
-        toast.success('New cattle registered successfully!', {
-          description: `Assigned tag ID ${newId} (${gender === 'male' ? 'Male ♂' : 'Female ♀'})`,
+      if (!syncedOnline) {
+        storage.addToSyncQueue({
+          id: `sync_${Date.now()}`,
+          type: 'create',
+          entity: 'cattle',
+          data: newAnimal,
+          status: 'pending',
+          timestamp: new Date().toISOString(),
         });
-        navigate('/cattle', { replace: true });
-      }, 800);
+      }
+
+      // Refresh cache in background
+      storage.syncWithBackend();
+
+      setIsSaving(false);
+      toast.success('New cattle registered successfully!', {
+        description: `Assigned tag ID ${newId} (${finalGender === 'male' ? 'Male ♂' : 'Female ♀'})`,
+      });
+      navigate('/cattle', { replace: true });
     }
   };
 

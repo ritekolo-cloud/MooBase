@@ -6,6 +6,9 @@ const router = Router();
 
 router.use(authenticateJWT);
 
+// Get all records across all types
+router.get('/', RecordController.getAll);
+
 // Health records
 router.post('/health', RecordController.createHealth);
 router.get('/health/:cattleId', RecordController.getHealthByCattle);
