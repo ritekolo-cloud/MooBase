@@ -15,14 +15,11 @@ export function SplashScreen() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden font-sans"
-         style={{ background: 'linear-gradient(160deg, #0F3D18 0%, #1A5C2A 55%, #2E7D44 100%)' }}>
+         style={{ background: '#0F3D18' }}>
       
       {/* Background texture elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-10"
-             style={{ background: 'radial-gradient(circle, #4ADE80 0%, transparent 70%)' }} />
-        <div className="absolute -bottom-32 -left-20 w-96 h-96 rounded-full opacity-10"
-             style={{ background: 'radial-gradient(circle, #4ADE80 0%, transparent 70%)' }} />
+
         {/* Subtle field lines */}
         <svg className="absolute bottom-0 left-0 right-0 w-full opacity-5" viewBox="0 0 400 80" fill="none">
           <path d="M0 80 Q100 40 200 60 Q300 80 400 50 L400 80 Z" fill="white"/>

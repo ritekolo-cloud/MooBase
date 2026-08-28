@@ -122,12 +122,7 @@ export function LoginScreen() {
     <div className="min-h-screen flex flex-col md:flex-row font-sans">
       {/* Left panel — Farm branding (desktop only) */}
       <div className="hidden md:flex md:w-[45%] relative flex-col items-center justify-center p-12 overflow-hidden"
-           style={{ background: 'linear-gradient(160deg, #0F3D18 0%, #1A5C2A 55%, #2E7D44 100%)' }}>
-        {/* Background circles */}
-        <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full opacity-10"
-             style={{ background: 'radial-gradient(circle, #4ADE80 0%, transparent 70%)' }} />
-        <div className="absolute -bottom-32 -right-16 w-96 h-96 rounded-full opacity-10"
-             style={{ background: 'radial-gradient(circle, #4ADE80 0%, transparent 70%)' }} />
+           style={{ background: '#0F3D18' }}>
 
         <div className="relative z-10 text-center max-w-sm">
           {/* Cow logo */}
@@ -189,7 +184,7 @@ export function LoginScreen() {
         {/* Mobile: Farm branding at top */}
         <div className="md:hidden text-center mb-8">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg"
-               style={{ background: 'linear-gradient(135deg, #1A5C2A, #2E7D44)' }}>
+               style={{ background: '#1A5C2A' }}>
             <svg viewBox="0 0 64 64" className="w-10 h-10" fill="none">
               <ellipse cx="32" cy="42" rx="20" ry="12" fill="white" opacity="0.9"/>
               <ellipse cx="20" cy="32" rx="8" ry="10" fill="white" opacity="0.9"/>
@@ -282,7 +277,7 @@ export function LoginScreen() {
                 type="submit"
                 disabled={isLoading}
                 className="w-full h-11 text-white rounded-xl font-semibold text-sm transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg, #1A5C2A 0%, #2E7D44 100%)' }}
+                style={{ background: '#1A5C2A' }}
               >
                 {isLoading ? (
                   <motion.div

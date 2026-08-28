@@ -101,7 +101,7 @@ export function AuthenticatedLayout() {
     <div className="min-h-screen bg-background flex flex-col md:flex-row font-sans">
       {/* Sidebar — Desktop only */}
       <aside className="hidden md:flex flex-col w-[260px] h-screen sticky top-0 flex-shrink-0"
-             style={{ background: 'linear-gradient(180deg, #0F3D18 0%, #1A5C2A 100%)' }}>
+             style={{ background: '#0F3D18' }}>
         
         {/* Farm branding header */}
         <div className="px-5 py-6 border-b" style={{ borderColor: 'rgba(255,255,255,0.12)' }}>

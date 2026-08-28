@@ -98,17 +98,11 @@ export function AttendantDashboard() {
 
   return (
     <div className="min-h-screen bg-background pb-12 flex flex-col font-sans">
-      {/* Top Hero Section with Deep Green Pasture Gradient */}
+      {/* Top Hero Section */}
       <header
         className="relative px-6 pt-6 pb-10 text-white overflow-hidden shadow-md"
-        style={{
-          background: 'linear-gradient(170deg, #09260E 0%, #0F3D18 45%, #1A5C2A 100%)',
-        }}
+        style={{ background: '#0F3D18' }}
       >
-        <div
-          className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-10 pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #4ADE80 0%, transparent 70%)' }}
-        />
 
         <div className="max-w-[1240px] mx-auto relative z-10">
           {/* Top Brand Bar */}

@@ -45,7 +45,7 @@ export function BottomNav({ role }: BottomNavProps) {
     <nav
       className="fixed bottom-0 left-0 right-0 z-40 md:hidden pb-safe border-t shadow-lg"
       style={{
-        background: 'linear-gradient(180deg, #0D3314 0%, #09260E 100%)',
+        background: '#09260E',
         borderColor: 'rgba(255,255,255,0.08)',
       }}
     >

@@ -88,9 +88,7 @@ export function CattleProfileScreen() {
       {/* Top Green Banner */}
       <div
         className="px-4 sm:px-6 pt-6 pb-8 text-white relative shadow-sm"
-        style={{
-          background: 'linear-gradient(170deg, #09260E 0%, #0F3D18 50%, #1A5C2A 100%)',
-        }}
+        style={{ background: '#0F3D18' }}
       >
         <div className="max-w-[1240px] mx-auto">
           {/* Header Action Bar */}
