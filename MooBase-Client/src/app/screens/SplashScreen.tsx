@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { storage } from '../utils/storage';
 
 export function SplashScreen() {
   const navigate = useNavigate();
@@ -9,61 +8,113 @@ export function SplashScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate('/login');
-    }, 1000);
+    }, 1800);
 
     return () => clearTimeout(timer);
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-6 font-sans relative">
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="text-center max-w-[400px]"
-      >
-        <div className="mb-6">
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
-            className="w-[64px] h-[64px] mx-auto mb-5 bg-[#1B5E20] rounded-[10px] flex items-center justify-center shadow-[0_6px_18px_rgba(27,94,32,0.15)]"
-          >
-            <svg
-              viewBox="0 0 100 100"
-              className="w-9 h-9"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M20 60C20 55 22 50 30 45C35 42 38 40 40 35C42 30 45 25 50 25C55 25 58 30 60 35C62 40 65 42 70 45C78 50 80 55 80 60V70H20V60Z"
-                fill="white"
-              />
-              <circle cx="38" cy="40" r="3" fill="#1B5E20" />
-              <circle cx="62" cy="40" r="3" fill="#1B5E20" />
-              <path
-                d="M35 48C35 48 40 52 50 52C60 52 65 48 65 48"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              <rect x="45" y="60" width="10" height="15" rx="2" fill="white" opacity="0.5" />
-            </svg>
-          </motion.div>
-          <h1 className="text-[36px] font-bold text-foreground tracking-tight leading-tight mb-2">MooBase</h1>
-          <p className="text-[16px] text-muted-foreground mb-6">Smart Cattle Records for Smart Farming</p>
-        </div>
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden font-sans"
+         style={{ background: 'linear-gradient(160deg, #0F3D18 0%, #1A5C2A 55%, #2E7D44 100%)' }}>
+      
+      {/* Background texture elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-10"
+             style={{ background: 'radial-gradient(circle, #4ADE80 0%, transparent 70%)' }} />
+        <div className="absolute -bottom-32 -left-20 w-96 h-96 rounded-full opacity-10"
+             style={{ background: 'radial-gradient(circle, #4ADE80 0%, transparent 70%)' }} />
+        {/* Subtle field lines */}
+        <svg className="absolute bottom-0 left-0 right-0 w-full opacity-5" viewBox="0 0 400 80" fill="none">
+          <path d="M0 80 Q100 40 200 60 Q300 80 400 50 L400 80 Z" fill="white"/>
+          <path d="M0 80 Q120 55 240 70 Q320 80 400 65 L400 80 Z" fill="white" opacity="0.5"/>
+        </svg>
+      </div>
 
-        <button
-          onClick={() => navigate('/login')}
-          className="h-[48px] px-8 bg-[#1B5E20] text-white rounded-[10px] font-semibold text-[15px] hover:bg-[#1B5E20]/90 transition-all duration-150 ease-out shadow-[0_6px_18px_rgba(27,94,32,0.15)] active:scale-98"
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+        className="text-center z-10 px-8"
+      >
+        {/* Logo Mark */}
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+          className="mb-8 flex flex-col items-center"
         >
-          Sign In to MooBase
-        </button>
+          {/* Cow icon */}
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-2xl"
+               style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' }}>
+            <svg viewBox="0 0 64 64" className="w-12 h-12" fill="none">
+              {/* Cow silhouette */}
+              <ellipse cx="32" cy="42" rx="20" ry="12" fill="white" opacity="0.9"/>
+              <ellipse cx="20" cy="32" rx="8" ry="10" fill="white" opacity="0.9"/>
+              <ellipse cx="44" cy="32" rx="8" ry="10" fill="white" opacity="0.9"/>
+              {/* Cow head */}
+              <ellipse cx="32" cy="22" rx="11" ry="9" fill="white" opacity="0.9"/>
+              {/* Ears */}
+              <ellipse cx="22" cy="17" rx="4" ry="5" fill="white" opacity="0.9"/>
+              <ellipse cx="42" cy="17" rx="4" ry="5" fill="white" opacity="0.9"/>
+              {/* Eyes */}
+              <circle cx="28" cy="20" r="1.5" fill="#1A5C2A"/>
+              <circle cx="36" cy="20" r="1.5" fill="#1A5C2A"/>
+              {/* Nose */}
+              <ellipse cx="32" cy="26" rx="4" ry="2.5" fill="#E8F5E9" opacity="0.6"/>
+              {/* Legs */}
+              <rect x="16" y="52" width="4" height="8" rx="2" fill="white" opacity="0.7"/>
+              <rect x="24" y="52" width="4" height="8" rx="2" fill="white" opacity="0.7"/>
+              <rect x="36" y="52" width="4" height="8" rx="2" fill="white" opacity="0.7"/>
+              <rect x="44" y="52" width="4" height="8" rx="2" fill="white" opacity="0.7"/>
+              {/* Spots */}
+              <ellipse cx="30" cy="40" rx="5" ry="4" fill="#2E7D44" opacity="0.3"/>
+              <ellipse cx="42" cy="38" rx="4" ry="3" fill="#2E7D44" opacity="0.3"/>
+            </svg>
+          </div>
+
+          {/* Farm Name */}
+          <h1 className="text-4xl font-bold tracking-widest text-white uppercase mb-1"
+              style={{ letterSpacing: '0.15em', textShadow: '0 2px 12px rgba(0,0,0,0.3)' }}>
+            KAYERA FARM
+          </h1>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-px w-12 bg-white opacity-30" />
+            <p className="text-sm font-medium text-white opacity-70 tracking-widest uppercase">
+              Livestock Records Management
+            </p>
+            <div className="h-px w-12 bg-white opacity-30" />
+          </div>
+        </motion.div>
+
+        {/* Loading indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.4 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div className="flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="w-2 h-2 rounded-full bg-white"
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+              />
+            ))}
+          </div>
+          <button
+            onClick={() => navigate('/login')}
+            className="text-white/60 text-sm font-medium hover:text-white/90 transition-colors underline-offset-4 hover:underline"
+          >
+            Sign in now
+          </button>
+        </motion.div>
       </motion.div>
 
-      <div className="absolute bottom-8 text-muted-foreground text-[14px] font-medium">
-        v1.0.0 • Made for Uganda Farms
+      {/* Footer */}
+      <div className="absolute bottom-8 text-white/40 text-xs font-medium tracking-wider z-10">
+        KAYERA FARM © {new Date().getFullYear()}
       </div>
     </div>
   );

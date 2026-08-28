@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Save, Heart, ShieldAlert, CheckCircle2, Droplets } from 'lucide-react';
+import { ArrowLeft, Save, Heart, ShieldAlert, CheckCircle2, Droplets, Sparkles } from 'lucide-react';
 import { storage, Cattle } from '../utils/storage';
 import { toast } from 'sonner';
 
@@ -65,7 +65,7 @@ export function AddCattleScreen() {
         setIsSaving(false);
         toast.success('Cattle profile updated successfully!');
         navigate(`/cattle/profile/${id}`, { replace: true });
-      }, 1000);
+      }, 800);
     } else {
       const allCattle = storage.getCattle();
       
@@ -105,22 +105,22 @@ export function AddCattleScreen() {
           description: `Assigned tag ID ${newId} (${gender === 'male' ? 'Male ♂' : 'Female ♀'})`,
         });
         navigate('/cattle', { replace: true });
-      }, 1000);
+      }, 800);
     }
   };
 
-  const statuses: { value: Cattle['status']; label: string; icon: any }[] = [
-    { value: 'healthy', label: 'Healthy', icon: Heart },
-    { value: 'sick', label: 'Sick / Alert', icon: ShieldAlert },
-    { value: 'vaccinated', label: 'Vaccinated', icon: CheckCircle2 },
-    ...(gender === 'female' ? [{ value: 'lactating' as const, label: 'Lactating', icon: Droplets }] : []),
+  const statuses: { value: Cattle['status']; label: string; icon: any; colorClass: string }[] = [
+    { value: 'healthy', label: 'Healthy', icon: Heart, colorClass: 'text-emerald-700' },
+    { value: 'sick', label: 'Sick / Alert', icon: ShieldAlert, colorClass: 'text-rose-700' },
+    { value: 'vaccinated', label: 'Vaccinated', icon: CheckCircle2, colorClass: 'text-amber-700' },
+    ...(gender === 'female' ? [{ value: 'lactating' as const, label: 'Lactating', icon: Droplets, colorClass: 'text-blue-700' }] : []),
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-8 flex flex-col font-sans">
+    <div className="min-h-screen bg-background pb-12 flex flex-col font-sans">
       {/* Header */}
-      <div className="bg-card border-b border-border sticky top-0 z-20 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="bg-card border-b border-border sticky top-0 z-30 px-4 sm:px-6 py-4 flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-3 max-w-[1240px] mx-auto w-full">
           <button
             onClick={() => {
               if (isEditMode && id) {
@@ -129,13 +129,19 @@ export function AddCattleScreen() {
                 navigate('/cattle');
               }
             }}
-            className="p-1 -ml-1 text-muted-foreground hover:bg-muted hover:text-foreground rounded-md transition-all duration-150 ease-out"
+            className="p-2 -ml-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-xl transition-colors cursor-pointer"
+            title="Back"
           >
-            <ArrowLeft className="w-[20px] h-[20px]" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold text-foreground tracking-tight">
-            {isEditMode ? 'Edit Cattle Profile' : 'Register New Cattle'}
-          </h1>
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
+              {isEditMode ? 'Edit Cattle Profile' : 'Register New Cattle'}
+            </h1>
+            <p className="text-xs text-muted-foreground font-medium">
+              Kayera Farm Livestock Herd Registry
+            </p>
+          </div>
         </div>
       </div>
 
@@ -143,77 +149,78 @@ export function AddCattleScreen() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15, ease: 'easeOut' }}
-        className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-6"
+        className="flex-1 max-w-xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information Card */}
-          <div className="bg-card border border-border rounded-lg p-5 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold text-foreground tracking-tight uppercase tracking-wider text-xs">
-              Basic Information
+          <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Basic Animal Information
             </h2>
             
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Name / Identifier <span className="text-destructive">*</span>
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                Cattle Name / Identifier <span className="text-destructive">*</span>
               </label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Bella"
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                placeholder="e.g. Bella, Bruno, Daisy"
+                className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Breed <span className="text-destructive">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={breed}
-                onChange={(e) => setBreed(e.target.value)}
-                placeholder="e.g. Friesian, Ankole, Jersey"
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                  Breed <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={breed}
+                  onChange={(e) => setBreed(e.target.value)}
+                  placeholder="e.g. Friesian, Ankole, Jersey"
+                  className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                  Age (years) <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  max={30}
+                  value={age}
+                  onChange={(e) => setAge(parseInt(e.target.value, 10) || 1)}
+                  className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Age (years) <span className="text-destructive">*</span>
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                Sex / Gender <span className="text-destructive">*</span>
               </label>
-              <input
-                type="number"
-                required
-                min={1}
-                max={30}
-                value={age}
-                onChange={(e) => setAge(parseInt(e.target.value, 10) || 1)}
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Gender / Sex <span className="text-destructive">*</span>
-              </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    setGender('female');
-                  }}
-                  className={`py-2 px-3 rounded-md text-sm font-medium border flex items-center justify-center gap-2 transition-all ${
+                  onClick={() => setGender('female')}
+                  className={`py-3 px-4 rounded-xl text-xs font-bold border flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     gender === 'female'
-                      ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-sm dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300'
+                      ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-xs'
                       : 'bg-card border-border text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <span className="text-base leading-none">♀</span>
+                  <span className="text-sm">♀</span>
                   <span>Female (Cow / Heifer)</span>
                 </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -222,13 +229,13 @@ export function AddCattleScreen() {
                       setStatus('healthy');
                     }
                   }}
-                  className={`py-2 px-3 rounded-md text-sm font-medium border flex items-center justify-center gap-2 transition-all ${
+                  className={`py-3 px-4 rounded-xl text-xs font-bold border flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     gender === 'male'
-                      ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-sm dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-300'
+                      ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-xs'
                       : 'bg-card border-border text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <span className="text-base leading-none">♂</span>
+                  <span className="text-sm">♂</span>
                   <span>Male (Bull / Steer)</span>
                 </button>
               </div>
@@ -236,12 +243,12 @@ export function AddCattleScreen() {
           </div>
 
           {/* Health Status Card */}
-          <div className="bg-card border border-border rounded-lg p-5 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold text-foreground tracking-tight uppercase tracking-wider text-xs">
-              Health Status
+          <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Initial Health Status
             </h2>
             
-            <div className="p-1 bg-muted rounded-lg grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-2">
               {statuses.map((item) => {
                 const Icon = item.icon;
                 const isSelected = status === item.value;
@@ -250,10 +257,10 @@ export function AddCattleScreen() {
                     key={item.value}
                     type="button"
                     onClick={() => setStatus(item.value)}
-                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-md text-xs font-medium transition-colors ${
+                    className={`flex items-center justify-center gap-2 py-3 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
                       isSelected
-                        ? 'bg-card text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-primary text-white border-primary shadow-xs'
+                        : 'bg-background border-border text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -267,21 +274,21 @@ export function AddCattleScreen() {
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full bg-primary text-primary-foreground py-2.5 rounded-md font-medium hover:bg-primary/90 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-[0.98]"
           >
             {isSaving ? (
               <>
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full"
+                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                 />
-                <span>Saving...</span>
+                <span>Saving to Registry...</span>
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>{isEditMode ? 'Save Changes' : 'Register Cattle'}</span>
+                <span>{isEditMode ? 'Save Profile Changes' : 'Register Cattle to Herd'}</span>
               </>
             )}
           </button>

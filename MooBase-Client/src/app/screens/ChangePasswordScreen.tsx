@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Save, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Save, Eye, EyeOff, Lock } from 'lucide-react';
 import { storage } from '../utils/storage';
 import { API_BASE_URL } from '../config/api';
 import { toast } from 'sonner';
@@ -55,7 +55,7 @@ export function ChangePasswordScreen() {
         throw new Error(resData.message || 'Failed to change password');
       }
 
-      toast.success('Password changed successfully!');
+      toast.success('Password updated successfully!');
       navigate('/settings');
     } catch (err: any) {
       const isNetworkError =
@@ -66,7 +66,7 @@ export function ChangePasswordScreen() {
 
       if (isNetworkError) {
         console.warn('Password change failed because the server is unreachable.', err);
-        toast.error('Unable to connect to the authentication server. Please try again when the server is reachable.');
+        toast.error('Unable to connect to the authentication server. Please try again when online.');
       } else {
         toast.error(err.message || 'Failed to change password');
       }
@@ -76,17 +76,25 @@ export function ChangePasswordScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-8 flex flex-col font-sans">
+    <div className="min-h-screen bg-background pb-12 flex flex-col font-sans">
       {/* Header */}
-      <div className="bg-card border-b border-border sticky top-0 z-20 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="bg-card border-b border-border sticky top-0 z-20 px-4 sm:px-6 py-4 flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-3 max-w-[1240px] mx-auto w-full">
           <button
             onClick={() => navigate('/settings')}
-            className="p-1 -ml-1 text-muted-foreground hover:bg-muted hover:text-foreground rounded-md transition-all duration-150 ease-out"
+            className="p-2 -ml-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-xl transition-colors cursor-pointer"
+            title="Back to Settings"
           >
-            <ArrowLeft className="w-[20px] h-[20px]" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold text-foreground tracking-tight">Change Password</h1>
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
+              Change Account Password
+            </h1>
+            <p className="text-xs text-muted-foreground font-medium">
+              Kayera Farm Security Credentials
+            </p>
+          </div>
         </div>
       </div>
 
@@ -94,13 +102,23 @@ export function ChangePasswordScreen() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15, ease: 'easeOut' }}
-        className="flex-1 px-6 py-8 max-w-lg mx-auto w-full"
+        className="flex-1 px-4 sm:px-6 py-6 max-w-xl mx-auto w-full space-y-6"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-card border border-border rounded-lg p-5 shadow-sm space-y-4">
+          <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="flex items-center gap-3 pb-3 border-b border-border">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-foreground">Password Update</h2>
+                <p className="text-xs text-muted-foreground">Keep your account secure with a strong password</p>
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Current Password
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                Current Password <span className="text-destructive">*</span>
               </label>
               <input
                 type="password"
@@ -108,13 +126,13 @@ export function ChangePasswordScreen() {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Enter current password"
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-medium text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                New Password
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                New Password <span className="text-destructive">*</span>
               </label>
               <div className="relative">
                 <input
@@ -122,8 +140,8 @@ export function ChangePasswordScreen() {
                   required
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm pr-10"
+                  placeholder="Enter new password (min 6 characters)"
+                  className="w-full h-11 px-4 pr-11 bg-background border border-border rounded-xl text-sm font-medium text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
                 />
                 <button
                   type="button"
@@ -136,8 +154,8 @@ export function ChangePasswordScreen() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Confirm New Password
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                Confirm New Password <span className="text-destructive">*</span>
               </label>
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -145,7 +163,7 @@ export function ChangePasswordScreen() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm new password"
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-medium text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
               />
             </div>
           </div>
@@ -153,21 +171,21 @@ export function ChangePasswordScreen() {
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full bg-primary text-primary-foreground py-2.5 rounded-md font-medium hover:bg-primary/90 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-[0.98]"
           >
             {isSaving ? (
               <>
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full"
+                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                 />
-                <span>Saving...</span>
+                <span>Updating Password...</span>
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>Change Password</span>
+                <span>Save New Password</span>
               </>
             )}
           </button>

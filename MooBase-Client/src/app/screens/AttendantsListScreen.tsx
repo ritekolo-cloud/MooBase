@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, UserPlus, Trash2, Shield, UserCheck, Pencil } from 'lucide-react';
-import { storage, User } from '../utils/storage';
+import { ArrowLeft, UserPlus, Trash2, Shield, UserCheck, Pencil, User } from 'lucide-react';
+import { storage, User as StorageUser } from '../utils/storage';
 import { toast } from 'sonner';
 
 export function AttendantsListScreen() {
   const navigate = useNavigate();
   const [currentUser] = useState(() => storage.getUser());
-  const [attendants, setAttendants] = useState<User[]>([]);
+  const [attendants, setAttendants] = useState<StorageUser[]>([]);
 
   useEffect(() => {
     // Only managers can access staff list
@@ -26,7 +26,7 @@ export function AttendantsListScreen() {
       return;
     }
 
-    if (confirm(`Are you sure you want to remove ${name} from farm attendants?`)) {
+    if (confirm(`Are you sure you want to remove ${name} from Kayera Farm staff?`)) {
       storage.deleteUser(id);
       setAttendants(storage.getUsers());
       toast.success(`${name} was successfully removed`);
@@ -34,126 +34,151 @@ export function AttendantsListScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-8 flex flex-col font-sans">
+    <div className="min-h-screen bg-background pb-12 flex flex-col font-sans">
       {/* Header */}
-      <div className="bg-card border-b border-[#E5E7EB] sticky top-0 z-30 transition-colors duration-150 ease-out">
-        <div className="max-w-[1280px] mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="bg-card border-b border-border sticky top-0 z-30 px-4 sm:px-6 py-4 flex items-center justify-between shadow-xs">
+        <div className="max-w-[1240px] mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/manager/dashboard')}
-              className="p-1 -ml-1 text-muted-foreground hover:bg-muted hover:text-foreground rounded-md transition-all duration-150 ease-out"
+              className="p-2 -ml-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-xl transition-colors cursor-pointer"
+              title="Back to Dashboard"
             >
-              <ArrowLeft className="w-[20px] h-[20px]" />
+              <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-[36px] font-bold text-foreground tracking-tight leading-tight">Farm Staff</h1>
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
+                Farm Staff & Attendants
+              </h1>
+              <p className="text-xs text-muted-foreground font-medium">
+                Kayera Farm User Access Management ({attendants.length} registered)
+              </p>
+            </div>
           </div>
 
           <button
             onClick={() => navigate('/users/add')}
-            className="h-[48px] px-6 bg-[#1B5E20] text-white rounded-[10px] font-semibold text-[14px] hover:bg-[#1B5E20]/90 transition-all duration-150 ease-out flex items-center gap-2 shadow-[0_6px_18px_rgba(27,94,32,0.15)] active:scale-98"
+            className="h-10 px-4 bg-primary text-primary-foreground rounded-xl font-bold text-xs sm:text-sm hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
           >
-            <UserPlus className="w-[18px] h-[18px]" />
-            <span>Add Attendant</span>
+            <UserPlus className="w-4 h-4" />
+            <span>Add Staff</span>
           </button>
         </div>
       </div>
 
-      <div className="flex-1 px-6 py-8 max-w-[1280px] mx-auto w-full">
+      <div className="flex-1 px-4 sm:px-6 py-6 max-w-[1240px] mx-auto w-full">
         {attendants.length === 0 ? (
-          <div className="text-center py-16 px-4 bg-card border border-[#E5E7EB] rounded-[12px] shadow-[0_6px_18px_rgba(0,0,0,0.06)]">
-            <div className="w-[48px] h-[48px] bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <UserCheck className="w-[20px] h-[20px] text-muted-foreground" />
+          <div className="bg-card border border-border rounded-2xl p-12 text-center shadow-sm max-w-md mx-auto">
+            <div className="w-14 h-14 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4 text-muted-foreground">
+              <UserCheck className="w-7 h-7" />
             </div>
-            <h4 className="text-[18px] font-semibold text-foreground mb-1">No staff registered</h4>
-            <p className="text-[14px] text-muted-foreground font-medium mb-6">Add your first farm attendant to get started.</p>
+            <h3 className="text-base font-bold text-foreground mb-1">No Staff Registered</h3>
+            <p className="text-xs text-muted-foreground font-medium mb-5">
+              Add your first farm attendant or manager to get started.
+            </p>
             <button
               onClick={() => navigate('/users/add')}
-              className="h-[48px] px-6 bg-[#1B5E20] text-white rounded-[10px] font-semibold text-[14px] hover:bg-[#1B5E20]/90 transition-all duration-150 ease-out inline-flex items-center gap-2 shadow-[0_6px_18px_rgba(27,94,32,0.15)] active:scale-98"
+              className="px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-colors inline-flex items-center gap-1.5 shadow-sm"
             >
-              <UserPlus className="w-[18px] h-[18px]" />
-              <span>Add First Attendant</span>
+              <UserPlus className="w-4 h-4" />
+              <span>Add First Staff Member</span>
             </button>
           </div>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="bg-card border border-[#E5E7EB] rounded-[12px] shadow-[0_6px_18px_rgba(0,0,0,0.06)] overflow-hidden"
-          >
-            {/* Table Header */}
-            <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 border-b border-[#E5E7EB] bg-muted/40 text-[14px] font-semibold text-muted-foreground">
-              <div className="col-span-5">Name</div>
-              <div className="col-span-4">Username</div>
-              <div className="col-span-2">Role</div>
-              <div className="col-span-1 text-right">Action</div>
+          <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+            {/* Desktop Table Header */}
+            <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3.5 border-b border-border bg-muted/40 text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              <div className="col-span-5">Name & Initials</div>
+              <div className="col-span-4">Email / Username</div>
+              <div className="col-span-2">System Role</div>
+              <div className="col-span-1 text-right">Actions</div>
             </div>
 
-            <div className="divide-y divide-[#E5E7EB]">
+            <div className="divide-y divide-border">
               {attendants.map((staff, index) => {
                 const isSelf = currentUser?.id === staff.id;
+                const initials = staff.name
+                  ? staff.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+                  : staff.username.charAt(0).toUpperCase();
+
                 return (
                   <motion.div
                     key={staff.id}
-                    initial={{ opacity: 0, y: 8 }}
+                    initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.15, ease: 'easeOut', delay: 0.02 * index }}
-                    className="flex flex-col md:grid md:grid-cols-12 md:items-center gap-2 md:gap-4 px-6 py-5 hover:bg-muted/30 transition-colors duration-150 ease-out"
+                    transition={{ duration: 0.12, delay: index * 0.02 }}
+                    className="flex flex-col md:grid md:grid-cols-12 md:items-center gap-2 md:gap-4 px-4 sm:px-6 py-4 hover:bg-muted/30 transition-colors"
                   >
-                    {/* Name Column */}
-                    <div className="col-span-5 flex items-center gap-4 min-w-0">
-                      <div className={`w-[40px] h-[40px] rounded-[10px] flex items-center justify-center font-semibold text-[16px] flex-shrink-0 border transition-colors duration-150 ease-out ${
-                        staff.role === 'manager'
-                          ? 'bg-secondary/10 text-secondary border-secondary/20'
-                          : 'bg-muted text-foreground border-[#E5E7EB]'
-                      }`}>
-                        {staff.name?.[0]?.toUpperCase() || staff.username[0].toUpperCase()}
+                    {/* Name */}
+                    <div className="col-span-5 flex items-center gap-3.5 min-w-0">
+                      <div
+                        className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm flex-shrink-0 border ${
+                          staff.role === 'manager'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}
+                      >
+                        {initials}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-[16px] font-semibold text-foreground truncate">{staff.name || 'Unnamed staff'}</p>
+                          <h3 className="text-sm sm:text-base font-bold text-foreground truncate">
+                            {staff.name || 'Unnamed staff'}
+                          </h3>
                           {isSelf && (
-                            <span className="px-2 py-0.5 bg-muted text-muted-foreground text-[12px] font-semibold rounded-md border border-[#E5E7EB] flex-shrink-0">
+                            <span className="px-2 py-0.2 bg-primary/10 text-primary text-[11px] font-bold rounded-md border border-primary/20">
                               You
                             </span>
                           )}
                         </div>
+                        <p className="text-xs text-muted-foreground font-medium md:hidden mt-0.5 truncate">
+                          {staff.username}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Username Column */}
+                    {/* Username / Email */}
                     <div className="col-span-4 hidden md:block min-w-0">
-                      <p className="text-[14px] text-muted-foreground truncate font-medium">{staff.username}</p>
+                      <p className="text-sm text-muted-foreground truncate font-medium">{staff.username}</p>
                     </div>
 
-                    {/* Role Column */}
+                    {/* Role */}
                     <div className="col-span-2 flex items-center">
-                      <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[14px] font-semibold border capitalize ${
-                        staff.role === 'manager'
-                          ? 'bg-secondary/10 text-secondary border-secondary/20'
-                          : 'bg-muted text-muted-foreground border-[#E5E7EB]'
-                      }`}>
-                        <Shield className="w-[14px] h-[14px]" />
-                        {staff.role}
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border capitalize ${
+                          staff.role === 'manager'
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}
+                      >
+                        {staff.role === 'manager' ? (
+                          <>
+                            <Shield className="w-3.5 h-3.5" /> Farm Manager
+                          </>
+                        ) : (
+                          <>
+                            <User className="w-3.5 h-3.5" /> Farm Attendant
+                          </>
+                        )}
                       </span>
                     </div>
 
-                    {/* Action Column */}
-                    <div className="col-span-1 flex justify-end gap-1">
+                    {/* Actions */}
+                    <div className="col-span-1 flex items-center justify-end gap-1 mt-1 md:mt-0">
                       <button
                         onClick={() => navigate(`/users/edit/${staff.id}`)}
-                        className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors duration-150 ease-out"
-                        title="Edit Staff"
+                        className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
+                        title="Edit User"
                       >
-                        <Pencil className="w-[16px] h-[16px]" />
+                        <Pencil className="w-4 h-4" />
                       </button>
                       {!isSelf && (
                         <button
                           onClick={() => handleDelete(staff.id, staff.name || staff.username)}
-                          className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors duration-150 ease-out"
-                          title="Remove Staff"
+                          className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
+                          title="Remove User"
                         >
-                          <Trash2 className="w-[16px] h-[16px]" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       )}
                     </div>
@@ -161,7 +186,7 @@ export function AttendantsListScreen() {
                 );
               })}
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
     </div>

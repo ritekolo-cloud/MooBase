@@ -67,7 +67,6 @@ export function ProfileScreen() {
           ...currentUser,
           ...resData.data.user,
         };
-        // 1. Authoritative sync: Update local state and cache from backend response
         storage.setUser(persistedUser);
         setCurrentUser(persistedUser);
         setName(persistedUser.name || '');
@@ -83,7 +82,6 @@ export function ProfileScreen() {
         err.message?.includes('Failed to fetch');
 
       if (isNetworkError) {
-        // Offline Fallback: update locally and queue for sync
         console.warn('Could not sync profile update directly with server. Queued for offline sync.', err);
         const offlineUser = {
           ...currentUser,
@@ -98,29 +96,39 @@ export function ProfileScreen() {
         setCurrentUser(offlineUser);
         toast.warning('Offline: Profile updated locally and queued for sync.');
       } else {
-        // Explicit API error (e.g. 400, 401, 403, 500) - NEVER report false success
         console.error('Profile update failed:', err);
         toast.error(err.message || 'Failed to update profile');
       }
     } finally {
       setIsSaving(false);
-      // Dispatch a custom event to notify all layout components (sidebar, header, settings)
       window.dispatchEvent(new Event('profile-updated'));
     }
   };
 
+  const initials = name
+    ? name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+    : currentUser.username?.charAt(0).toUpperCase() || 'U';
+
   return (
-    <div className="min-h-screen bg-background pb-8 flex flex-col font-sans">
+    <div className="min-h-screen bg-background pb-12 flex flex-col font-sans">
       {/* Header */}
-      <div className="bg-card border-b border-border sticky top-0 z-20 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="bg-card border-b border-border sticky top-0 z-20 px-4 sm:px-6 py-4 flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-3 max-w-[1240px] mx-auto w-full">
           <button
             onClick={() => navigate('/settings')}
-            className="p-1 -ml-1 text-muted-foreground hover:bg-muted hover:text-foreground rounded-md transition-all duration-150 ease-out"
+            className="p-2 -ml-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-xl transition-colors cursor-pointer"
+            title="Back to Settings"
           >
-            <ArrowLeft className="w-[20px] h-[20px]" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold text-foreground tracking-tight">Edit Profile</h1>
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
+              Edit Profile
+            </h1>
+            <p className="text-xs text-muted-foreground font-medium">
+              Kayera Farm User Account
+            </p>
+          </div>
         </div>
       </div>
 
@@ -128,28 +136,28 @@ export function ProfileScreen() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15, ease: 'easeOut' }}
-        className="flex-1 px-6 py-8 max-w-lg mx-auto w-full space-y-6"
+        className="flex-1 max-w-xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-card border border-border rounded-lg p-5 shadow-sm space-y-4">
-            {/* Identity Info (Read-Only) */}
+          <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-5">
+            {/* Identity Info Card */}
             <div className="flex items-center gap-4 pb-4 border-b border-border">
-              <div className="w-[56px] h-[56px] rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-xl font-bold text-primary flex-shrink-0">
-                {name?.[0]?.toUpperCase() || currentUser.username?.[0]?.toUpperCase() || 'U'}
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-xl font-bold text-primary flex-shrink-0">
+                {initials}
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-foreground">{name || 'Guest User'}</h3>
-                <span className="inline-block px-2 py-0.5 bg-muted text-muted-foreground text-[10px] font-semibold rounded border border-border capitalize mt-1">
-                  {currentUser.role}
+                <h3 className="text-base font-bold text-foreground">{name || 'Farm User'}</h3>
+                <span className="inline-block px-2.5 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded-lg border border-primary/20 capitalize mt-1">
+                  {currentUser.role === 'manager' ? 'Farm Manager' : 'Farm Attendant'}
                 </span>
               </div>
             </div>
 
             {/* Form Fields */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1.5">
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>Full Name</span>
+                <span>Full Name <span className="text-destructive">*</span></span>
               </label>
               <input
                 type="text"
@@ -157,12 +165,12 @@ export function ProfileScreen() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Mukasa John"
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1.5">
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5 text-muted-foreground" />
                 <span>Username / Email</span>
               </label>
@@ -170,35 +178,35 @@ export function ProfileScreen() {
                 type="text"
                 disabled
                 value={currentUser.username}
-                className="w-full py-2 px-3 bg-muted border border-border rounded-md text-sm text-muted-foreground cursor-not-allowed opacity-80"
+                className="w-full h-11 px-4 bg-muted/70 border border-border rounded-xl text-sm font-medium text-muted-foreground cursor-not-allowed opacity-80"
               />
-              <p className="text-[11px] text-muted-foreground mt-1">Username/Email cannot be changed.</p>
+              <p className="text-[11px] text-muted-foreground mt-1 font-medium">Username and email are authoritative and managed by administrators.</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1.5">
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
                 <Phone className="w-3.5 h-3.5 text-muted-foreground" />
                 <span>Phone Number</span>
               </label>
               <input
-                type="text"
+                type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="e.g. +256 700 000 000"
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5 flex items-center gap-1.5">
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5 text-muted-foreground" />
                 <span>System Role</span>
               </label>
               <input
                 type="text"
                 disabled
-                value={currentUser.role === 'manager' ? 'Farm Manager (Administrator)' : 'Farm Attendant'}
-                className="w-full py-2 px-3 bg-muted border border-border rounded-md text-sm text-muted-foreground cursor-not-allowed opacity-80"
+                value={currentUser.role === 'manager' ? 'Farm Manager (Full Admin Access)' : 'Farm Attendant (Operational Access)'}
+                className="w-full h-11 px-4 bg-muted/70 border border-border rounded-xl text-sm font-medium text-muted-foreground cursor-not-allowed opacity-80"
               />
             </div>
           </div>
@@ -206,16 +214,16 @@ export function ProfileScreen() {
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full bg-primary text-primary-foreground py-2.5 rounded-md font-medium hover:bg-primary/90 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-[0.98]"
           >
             {isSaving ? (
               <>
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full"
+                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                 />
-                <span>Saving...</span>
+                <span>Updating Profile...</span>
               </>
             ) : (
               <>

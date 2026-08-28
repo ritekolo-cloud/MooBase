@@ -46,7 +46,7 @@ export function AddAttendantScreen() {
 
     // Password is only required in create mode
     if (!isEditMode && !password) {
-      toast.error('Password is required');
+      toast.error('Password is required for new accounts');
       return;
     }
 
@@ -93,7 +93,7 @@ export function AddAttendantScreen() {
         setIsSaving(false);
         toast.success(`Staff member ${name} updated successfully!`);
         navigate('/users', { replace: true });
-      }, 1000);
+      }, 800);
     } else {
       // Create mode
       const newUserId = `u_${Date.now()}`;
@@ -134,28 +134,34 @@ export function AddAttendantScreen() {
 
       setTimeout(() => {
         setIsSaving(false);
-        toast.success(`Attendant ${name} registered successfully!`, {
-          description: 'Syncing details with server...',
+        toast.success(`Staff member ${name} registered successfully!`, {
+          description: 'Syncing credentials with farm server...',
         });
         navigate('/users', { replace: true });
-      }, 1000);
+      }, 800);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background pb-8 flex flex-col font-sans">
+    <div className="min-h-screen bg-background pb-12 flex flex-col font-sans">
       {/* Header */}
-      <div className="bg-card border-b border-border sticky top-0 z-20 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="bg-card border-b border-border sticky top-0 z-30 px-4 sm:px-6 py-4 flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-3 max-w-[1240px] mx-auto w-full">
           <button
             onClick={() => navigate('/users')}
-            className="p-1 -ml-1 text-muted-foreground hover:bg-muted hover:text-foreground rounded-md transition-all duration-150 ease-out"
+            className="p-2 -ml-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-xl transition-colors cursor-pointer"
+            title="Back to Staff List"
           >
-            <ArrowLeft className="w-[20px] h-[20px]" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold text-foreground tracking-tight">
-            {isEditMode ? 'Edit Staff Member' : 'Add Staff Member'}
-          </h1>
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
+              {isEditMode ? 'Edit Staff Member' : 'Register New Staff Member'}
+            </h1>
+            <p className="text-xs text-muted-foreground font-medium">
+              Kayera Farm Staff Account Provisioning
+            </p>
+          </div>
         </div>
       </div>
 
@@ -163,86 +169,102 @@ export function AddAttendantScreen() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15, ease: 'easeOut' }}
-        className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-6"
+        className="flex-1 max-w-xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Account Details Card */}
-          <div className="bg-card border border-border rounded-lg p-5 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold text-foreground tracking-tight uppercase tracking-wider text-xs">
-              Account Details
+          <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Staff Member Credentials
             </h2>
             
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Full Name</label>
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                Full Name <span className="text-destructive">*</span>
+              </label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. John Doe"
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                placeholder="e.g. Mukasa Ronald"
+                className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Username / Email</label>
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                Username / Email Address <span className="text-destructive">*</span>
+              </label>
               <input
                 type="email"
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. john@farm.com"
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                placeholder="e.g. attendant@kayerafarm.com"
+                className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                {isEditMode ? 'New Password (Optional)' : 'Password'}
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                {isEditMode ? 'New Password (Optional)' : 'Password'} {!isEditMode && <span className="text-destructive">*</span>}
               </label>
               <input
                 type="password"
                 required={!isEditMode}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={isEditMode ? 'Leave blank to keep current' : 'Minimum 6 characters'}
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                placeholder={isEditMode ? 'Leave blank to keep existing password' : 'Minimum 6 characters'}
+                className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
               />
             </div>
           </div>
 
           {/* Role Selection Card */}
-          <div className="bg-card border border-border rounded-lg p-5 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold text-foreground tracking-tight uppercase tracking-wider text-xs">
-              System Role
+          <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Permissions & Access Level
             </h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setRole('attendant')}
-                className={`p-4 rounded-lg border text-left transition-all duration-150 ease-out bg-card ${
+                className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
                   role === 'attendant'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:bg-muted/50'
+                    ? 'border-primary bg-primary/8 shadow-xs'
+                    : 'border-border bg-background hover:bg-muted/40'
                 }`}
               >
-                <User className={`w-4 h-4 mb-2.5 ${role === 'attendant' ? 'text-primary' : 'text-muted-foreground'}`} />
-                <h4 className="text-sm font-medium text-foreground">Attendant</h4>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">Record keeping and daily tasks</p>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${
+                  role === 'attendant' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                }`}>
+                  <User className="w-4 h-4" />
+                </div>
+                <h4 className="text-sm font-bold text-foreground">Farm Attendant</h4>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Daily cattle logging, health, vaccination, and milk records.
+                </p>
               </button>
 
               <button
                 type="button"
                 onClick={() => setRole('manager')}
-                className={`p-4 rounded-lg border text-left transition-all duration-150 ease-out bg-card ${
+                className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
                   role === 'manager'
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:bg-muted/50'
+                    ? 'border-primary bg-primary/8 shadow-xs'
+                    : 'border-border bg-background hover:bg-muted/40'
                 }`}
               >
-                <Shield className={`w-4 h-4 mb-2.5 ${role === 'manager' ? 'text-primary' : 'text-muted-foreground'}`} />
-                <h4 className="text-sm font-medium text-foreground">Manager</h4>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">Full access and admin rights</p>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${
+                  role === 'manager' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
+                }`}>
+                  <Shield className="w-4 h-4" />
+                </div>
+                <h4 className="text-sm font-bold text-foreground">Farm Manager</h4>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Full administrative control, herd analytics, reports, and staff management.
+                </p>
               </button>
             </div>
           </div>
@@ -250,21 +272,21 @@ export function AddAttendantScreen() {
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full bg-primary text-primary-foreground py-2.5 rounded-md font-medium hover:bg-primary/90 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-[0.98]"
           >
             {isSaving ? (
               <>
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full"
+                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                 />
-                <span>Registering...</span>
+                <span>Saving User...</span>
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>{isEditMode ? 'Save Changes' : 'Save Attendant'}</span>
+                <span>{isEditMode ? 'Save Staff Changes' : 'Register Staff Account'}</span>
               </>
             )}
           </button>

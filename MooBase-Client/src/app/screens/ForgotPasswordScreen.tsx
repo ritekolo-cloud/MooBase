@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
-
 import { API_BASE_URL } from '../config/api';
 
 export function ForgotPasswordScreen() {
@@ -38,7 +37,7 @@ export function ForgotPasswordScreen() {
       }
 
       setIsSent(true);
-      toast.success('Password reset link sent successfully!');
+      toast.success('Password reset instructions sent!');
     } catch (err: any) {
       const isNetworkError =
         err instanceof TypeError ||
@@ -48,7 +47,7 @@ export function ForgotPasswordScreen() {
 
       if (isNetworkError) {
         console.warn('Password reset request failed because the server is unreachable.', err);
-        toast.error('Unable to connect to the authentication server. Please try again when the server is reachable.');
+        toast.error('Unable to connect to the authentication server. Please try again when online.');
       } else {
         toast.error(err.message || 'Failed to request password reset');
       }
@@ -58,50 +57,50 @@ export function ForgotPasswordScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12 font-sans">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 sm:px-6 py-12 font-sans">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15, ease: 'easeOut' }}
-        className="w-full max-w-[400px] space-y-6"
+        className="w-full max-w-md space-y-6"
       >
         <div className="text-center">
-          <div className="w-[48px] h-[48px] mx-auto mb-4 bg-primary rounded-[10px] flex items-center justify-center shadow-md">
-            <Mail className="w-5 h-5 text-primary-foreground" />
+          <div className="w-14 h-14 mx-auto mb-4 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary shadow-xs">
+            <Mail className="w-6 h-6" />
           </div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Forgot Password?</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            No worries, we'll send you instructions to reset it.
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 font-medium">
+            Enter your registered Kayera Farm email to reset your account password.
           </p>
         </div>
 
-        <div className="bg-card border border-border rounded-lg p-5 shadow-sm space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-4">
           {!isSent ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
-                  Email Address
+                <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                  Account Email Address <span className="text-destructive">*</span>
                 </label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="enter your email (e.g. admin@moobase.com)"
-                  className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                  placeholder="e.g. manager@kayerafarm.com"
+                  className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-primary text-primary-foreground py-2.5 rounded-md font-medium hover:bg-primary/90 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full h-11 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-[0.98]"
               >
                 {isLoading ? (
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full"
+                    className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                   />
                 ) : (
                   'Send Reset Link'
@@ -110,19 +109,19 @@ export function ForgotPasswordScreen() {
             </form>
           ) : (
             <div className="text-center py-4 space-y-4">
-              <div className="flex justify-center">
-                <CheckCircle2 className="w-12 h-12 text-primary" />
+              <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200">
+                <CheckCircle2 className="w-7 h-7" />
               </div>
-              <div className="space-y-2">
-                <h3 className="font-semibold text-foreground">Check your email</h3>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold text-foreground">Check your email inbox</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  We've sent a password reset link to <strong>{email}</strong>. Please follow the instructions in the email.
+                  We've sent a password reset link to <strong>{email}</strong>. Please follow the instructions to set a new password.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsSent(false)}
-                className="text-xs text-primary hover:underline font-semibold"
+                className="text-xs text-primary hover:underline font-bold pt-2 cursor-pointer"
               >
                 Didn't get the email? Try again
               </button>
@@ -132,10 +131,10 @@ export function ForgotPasswordScreen() {
 
         <button
           onClick={() => navigate('/login')}
-          className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
+          className="w-full flex items-center justify-center gap-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors py-2 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to sign in</span>
+          <span>Back to Sign In</span>
         </button>
       </motion.div>
     </div>

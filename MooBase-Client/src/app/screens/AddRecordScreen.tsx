@@ -1,8 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Save, Info } from 'lucide-react';
-import { storage, Record } from '../utils/storage';
+import {
+  ArrowLeft,
+  Save,
+  Info,
+  HeartPulse,
+  Syringe,
+  Milk,
+  HeartHandshake,
+  Wheat,
+} from 'lucide-react';
+import { storage, Record as CattleRecord } from '../utils/storage';
 import { toast } from 'sonner';
 
 export function AddRecordScreen() {
@@ -13,7 +22,7 @@ export function AddRecordScreen() {
   const isEditMode = !!id;
 
   const [cattleId, setCattleId] = useState(location.state?.cattleId || '');
-  const [recordType, setRecordType] = useState<Record['type']>(
+  const [recordType, setRecordType] = useState<CattleRecord['type']>(
     location.state?.type || 'health'
   );
   const [notes, setNotes] = useState('');
@@ -23,12 +32,12 @@ export function AddRecordScreen() {
 
   const cattle = storage.getCattle();
 
-  const recordTypes: { value: Record['type']; label: string }[] = [
-    { value: 'health', label: 'Health' },
-    { value: 'vaccination', label: 'Vaccination' },
-    { value: 'feeding', label: 'Feeding' },
-    { value: 'milk', label: 'Milk Production' },
-    { value: 'breeding', label: 'Breeding' },
+  const recordTypes: { value: CattleRecord['type']; label: string; icon: any; colorClass: string }[] = [
+    { value: 'health', label: 'Health & Illness', icon: HeartPulse, colorClass: 'text-destructive' },
+    { value: 'vaccination', label: 'Vaccination', icon: Syringe, colorClass: 'text-accent' },
+    { value: 'milk', label: 'Milk Production', icon: Milk, colorClass: 'text-secondary' },
+    { value: 'breeding', label: 'Breeding & AI', icon: HeartHandshake, colorClass: 'text-primary' },
+    { value: 'feeding', label: 'Feeding Log', icon: Wheat, colorClass: 'text-emerald-700' },
   ];
 
   useEffect(() => {
@@ -50,7 +59,7 @@ export function AddRecordScreen() {
     e.preventDefault();
 
     if (!cattleId || !notes) {
-      toast.error('Please fill in all required fields');
+      toast.error('Please select an animal and enter notes');
       return;
     }
 
@@ -71,9 +80,9 @@ export function AddRecordScreen() {
         setIsSaving(false);
         toast.success('Record updated successfully!');
         navigate(`/cattle/profile/${cattleId}`, { replace: true });
-      }, 1000);
+      }, 800);
     } else {
-      const newRecord: Record = {
+      const newRecord: CattleRecord = {
         id: `R${Date.now()}`,
         cattleId,
         type: recordType,
@@ -93,12 +102,12 @@ export function AddRecordScreen() {
 
       setTimeout(() => {
         setIsSaving(false);
-        toast.success('Record saved successfully!', {
-          description: 'Will sync when online',
+        toast.success('Activity record saved successfully!', {
+          description: 'Saved locally. Will sync automatically when online.',
         });
 
         navigate(`/cattle/profile/${cattleId}`, { replace: true });
-      }, 1000);
+      }, 800);
     }
   };
 
@@ -113,10 +122,10 @@ export function AddRecordScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-8 flex flex-col font-sans">
+    <div className="min-h-screen bg-background pb-12 flex flex-col font-sans">
       {/* Header */}
-      <div className="bg-card border-b border-border sticky top-0 z-20 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="bg-card border-b border-border sticky top-0 z-30 px-4 sm:px-6 py-4 flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-3 max-w-[1240px] mx-auto w-full">
           <button
             onClick={() => {
               if (cattleId) {
@@ -125,13 +134,19 @@ export function AddRecordScreen() {
                 navigate('/cattle');
               }
             }}
-            className="p-1 -ml-1 text-muted-foreground hover:bg-muted hover:text-foreground rounded-md transition-all duration-150 ease-out"
+            className="p-2 -ml-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-xl transition-colors cursor-pointer"
+            title="Back"
           >
-            <ArrowLeft className="w-[20px] h-[20px]" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold text-foreground tracking-tight">
-            {isEditMode ? 'Edit Record' : 'Add New Record'}
-          </h1>
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
+              {isEditMode ? 'Edit Farm Record' : 'Record Farm Activity'}
+            </h1>
+            <p className="text-xs text-muted-foreground font-medium">
+              Kayera Farm Activity & Health Logging
+            </p>
+          </div>
         </div>
       </div>
 
@@ -139,27 +154,29 @@ export function AddRecordScreen() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15, ease: 'easeOut' }}
-        className="flex-1 max-w-lg mx-auto w-full px-4 py-6 space-y-6"
+        className="flex-1 max-w-xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6"
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Cattle Selection Card */}
-          <div className="bg-card border border-border rounded-lg p-5 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold text-foreground tracking-tight uppercase tracking-wider text-xs">
-              Select Cattle
+          <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-3">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              1. Select Animal
             </h2>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Cattle</label>
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                Target Cattle <span className="text-destructive">*</span>
+              </label>
               <select
                 value={cattleId}
                 onChange={(e) => setCattleId(e.target.value)}
                 required
                 disabled={isEditMode}
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                <option value="">Select cattle...</option>
+                <option value="">Select an animal from herd...</option>
                 {cattle.map((animal) => (
                   <option key={animal.id} value={animal.id}>
-                    {animal.name} ({animal.id}) - {animal.breed} ({animal.gender === 'male' ? '♂ Male' : '♀ Female'})
+                    {animal.name} ({animal.id}) — {animal.breed} ({animal.gender === 'male' ? '♂ Male' : '♀ Female'})
                   </option>
                 ))}
               </select>
@@ -167,108 +184,115 @@ export function AddRecordScreen() {
           </div>
 
           {/* Record Type Card */}
-          <div className="bg-card border border-border rounded-lg p-5 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold text-foreground tracking-tight uppercase tracking-wider text-xs">
-              Record Type
+          <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-3">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              2. Activity / Record Type
             </h2>
-            <div className="p-1 bg-muted rounded-lg flex flex-wrap gap-1">
-              {recordTypes.map((type) => (
-                <button
-                  key={type.value}
-                  type="button"
-                  onClick={() => setRecordType(type.value)}
-                  disabled={isEditMode}
-                  className={`flex-1 min-w-[calc(33.33%-4px)] py-2 px-3 rounded-md text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
-                    recordType === type.value
-                      ? 'bg-card text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {type.label}
-                </button>
-              ))}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {recordTypes.map((type) => {
+                const Icon = type.icon;
+                const isSelected = recordType === type.value;
+                return (
+                  <button
+                    key={type.value}
+                    type="button"
+                    onClick={() => setRecordType(type.value)}
+                    disabled={isEditMode}
+                    className={`flex flex-col items-center justify-center p-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-primary text-white border-primary shadow-xs'
+                        : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 mb-1" />
+                    <span className="text-center">{type.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Details Card */}
-          <div className="bg-card border border-border rounded-lg p-5 shadow-sm space-y-4">
-            <h2 className="text-sm font-semibold text-foreground tracking-tight uppercase tracking-wider text-xs">
-              Details
+          {/* Record Details Card */}
+          <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              3. Activity Details & Date
             </h2>
             
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Date</label>
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                Activity Date <span className="text-destructive">*</span>
+              </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 max={new Date().toISOString().split('T')[0]}
                 required
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
+                className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
               />
             </div>
 
+            {recordType === 'milk' && (
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                  Milk Production Yield (Liters)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="e.g. 14.5"
+                  value={getMilkLiters()}
+                  onChange={(e) =>
+                    setAdditionalData(JSON.stringify({ liters: parseFloat(e.target.value) || '' }))
+                  }
+                  className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+                />
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Notes <span className="text-destructive">*</span>
+              <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                Notes & Clinical Observations <span className="text-destructive">*</span>
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 required
                 rows={4}
-                placeholder="Enter detailed notes about this record..."
-                className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm resize-none"
+                placeholder="Enter detailed observations, dosage, follow-up recommendations, or feed type..."
+                className="w-full p-4 bg-background border border-border rounded-xl text-sm font-medium text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all resize-none"
               />
             </div>
-
-            {recordType === 'milk' && (
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">
-                  Milk Quantity (liters)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="12.5"
-                  value={getMilkLiters()}
-                  onChange={(e) =>
-                    setAdditionalData(JSON.stringify({ liters: parseFloat(e.target.value) || '' }))
-                  }
-                  className="w-full py-2 px-3 bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
-                />
-              </div>
-            )}
           </div>
 
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full bg-primary text-primary-foreground py-2.5 rounded-md font-medium hover:bg-primary/90 transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full h-12 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-[0.98]"
           >
             {isSaving ? (
               <>
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full"
+                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                 />
-                <span>Saving...</span>
+                <span>Saving Record...</span>
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>{isEditMode ? 'Update Record' : 'Save Record'}</span>
+                <span>{isEditMode ? 'Update Farm Record' : 'Save Record to System'}</span>
               </>
             )}
           </button>
 
-          <div className="bg-muted border border-border rounded-lg p-4 flex items-start gap-3">
-            <Info className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-muted-foreground">
-              <p className="font-semibold text-foreground mb-0.5">Offline-first saving</p>
-              <p className="leading-relaxed">
-                This record will be saved locally and automatically synced when you're back online.
+          <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-4 flex items-start gap-3 text-emerald-900">
+            <Info className="w-4 h-4 text-emerald-700 flex-shrink-0 mt-0.5" />
+            <div className="text-xs">
+              <p className="font-bold mb-0.5">Offline-Ready Data Capture</p>
+              <p className="text-emerald-800 leading-relaxed font-medium">
+                This record will be saved securely on your device immediately and synchronized with the farm server when connected.
               </p>
             </div>
           </div>

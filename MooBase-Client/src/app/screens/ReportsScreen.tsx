@@ -288,7 +288,7 @@ export function ReportsScreen() {
     }
 
     const rows: string[] = [];
-    rows.push('MOOBASE FARM ANALYTICAL REPORT');
+    rows.push('KAYERA FARM ANALYTICAL REPORT');
     rows.push(`Generated On,${new Date().toISOString()}`);
     rows.push(`Data Source,${isUsingLocalData ? 'Local Operational Cache' : 'Authoritative Backend Database'}`);
     rows.push('');
@@ -334,12 +334,12 @@ export function ReportsScreen() {
     const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.join('\n'));
     const link = document.createElement('a');
     link.setAttribute('href', csvContent);
-    link.setAttribute('download', `moobase-farm-report-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `kayera-farm-report-${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    toast.success('Analytical report exported as CSV!');
+    toast.success('Kayera Farm analytical report exported as CSV!');
   };
 
   const kpis = useMemo(() => {

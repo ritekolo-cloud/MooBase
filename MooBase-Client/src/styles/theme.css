@@ -3,67 +3,81 @@
 :root {
   --font-size: 16px;
   
-  /* Mandatory Color System */
-  --background: #F9FAFB; /* Neutral gray background */
-  --foreground: #111827; /* Dark gray for body/headings */
+  /* Kayera Farm Color System */
+  --background: #F5F3EE;          /* Warm cream/off-white agricultural background */
+  --foreground: #1C1A16;          /* Deep warm near-black for body text */
   
-  --card: #ffffff; /* White for cards, forms, inputs, tables */
-  --card-foreground: #111827;
+  --card: #ffffff;
+  --card-foreground: #1C1A16;
   
   --popover: #ffffff;
-  --popover-foreground: #111827;
+  --popover-foreground: #1C1A16;
   
-  --primary: #1B5E20; /* Brand green */
+  --primary: #1A5C2A;             /* Deep agricultural green */
   --primary-foreground: #ffffff;
   
-  --secondary: #1E3A8A;
+  --primary-dark: #0F3D18;        /* Darker green for sidebar/hero */
+  --primary-light: #E8F5E9;       /* Light green tint for highlights */
+  
+  --secondary: #1E40AF;           /* Blue for production/milk info */
   --secondary-foreground: #ffffff;
   
-  --muted: #F3F4F6;
-  --muted-foreground: #6B7280; /* Neutral gray placeholder/caption */
+  --muted: #EEEBE4;               /* Warm muted background */
+  --muted-foreground: #6B6559;    /* Warm gray for captions */
   
-  --accent: #F59E0B;
+  --accent: #D97706;              /* Amber/warm orange for pending/due activities */
   --accent-foreground: #ffffff;
   
-  --destructive: #DC2626; /* Red for danger actions */
+  --destructive: #C0392B;         /* Red for health alerts */
   --destructive-foreground: #ffffff;
   
-  --success: #16A34A;
+  --success: #16A34A;             /* Green for healthy status */
   --success-foreground: #ffffff;
   
-  --border: #E5E7EB; /* Mandatory border color */
-  --input: #E5E7EB;
+  --border: #E2DDD5;              /* Warm border color */
+  --input: #E2DDD5;
   --input-background: #ffffff;
-  --switch-background: #D1D5DB;
+  --switch-background: #C9C5BC;
   
-  --ring: #1B5E20; /* Focus indicator outline */
+  --ring: #1A5C2A;
   
-  /* Mandatory Border Radius System */
+  /* Border Radius System */
   --radius-btn: 10px;
   --radius-input: 10px;
-  --radius-card: 12px;
-  --radius-dialog: 14px;
+  --radius-card: 14px;
+  --radius-dialog: 16px;
+  
+  /* Farm-specific semantic colors */
+  --farm-green: #1A5C2A;
+  --farm-green-dark: #0F3D18;
+  --farm-green-mid: #2E7D44;
+  --farm-cream: #F5F3EE;
+  --farm-amber: #D97706;
+  --farm-red: #C0392B;
+  --farm-blue: #1E40AF;
 }
 
 .dark {
-  --background: #111827;
-  --foreground: #F9FAFB;
-  --card: #1F2937;
-  --card-foreground: #F9FAFB;
-  --popover: #1F2937;
-  --popover-foreground: #F9FAFB;
+  --background: #161310;
+  --foreground: #F5F3EE;
+  --card: #1E1B16;
+  --card-foreground: #F5F3EE;
+  --popover: #1E1B16;
+  --popover-foreground: #F5F3EE;
   --primary: #4ADE80;
-  --primary-foreground: #14532D;
+  --primary-foreground: #0F3D18;
+  --primary-dark: #0F3D18;
+  --primary-light: #14532D;
   --secondary: #60A5FA;
   --secondary-foreground: #1E3A8A;
-  --muted: #374151;
-  --muted-foreground: #9CA3AF;
+  --muted: #2A2520;
+  --muted-foreground: #9C9589;
   --accent: #FBBF24;
   --accent-foreground: #78350F;
   --destructive: #EF4444;
   --destructive-foreground: #FEF2F2;
-  --border: #374151;
-  --input: #374151;
+  --border: #33302A;
+  --input: #33302A;
   --ring: #4ADE80;
 }
 
@@ -97,7 +111,6 @@
   --color-switch-background: var(--switch-background);
   --color-ring: var(--ring);
   
-  /* Mandatory radii */
   --radius-button: var(--radius-btn);
   --radius-input: var(--radius-input);
   --radius-card: var(--radius-card);
@@ -111,14 +124,24 @@
 
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    font-family: 'Inter', sans-serif;
   }
 
   html {
     font-size: var(--font-size);
   }
 
-  /* Typography configurations */
   h1, h2, h3, h4, h5, h6 {
     @apply tracking-tight font-semibold text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Scrollbar hide utility */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
