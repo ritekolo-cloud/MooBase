@@ -57,7 +57,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://moobase-server.onrender.com/api
+        value: https://moobase-server-5jti.onrender.com/api
     routes:
       # SPA fallback — all paths render index.html so React Router works
       - type: rewrite

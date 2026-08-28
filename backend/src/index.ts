@@ -55,8 +55,8 @@ async function ensureDefaultUsers() {
   }
 }
 
-const server = app.listen(env.PORT, async () => {
-  console.log(`🚀 MooBase Server running in ${env.NODE_ENV} mode on http://localhost:${env.PORT}`);
+const server = app.listen(env.PORT, '0.0.0.0', async () => {
+  console.log(`🚀 MooBase Server running in ${env.NODE_ENV} mode on http://0.0.0.0:${env.PORT}`);
   await ensureDefaultUsers();
 });
 
