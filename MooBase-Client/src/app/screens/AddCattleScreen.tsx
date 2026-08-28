@@ -84,8 +84,8 @@ export function AddCattleScreen() {
         });
       }
 
-      // Refresh cache in background
-      storage.syncWithBackend();
+      // Refresh cache from server
+      await storage.syncWithBackend();
 
       setIsSaving(false);
       toast.success('Cattle profile updated successfully!');
@@ -141,8 +141,8 @@ export function AddCattleScreen() {
         });
       }
 
-      // Refresh cache in background
-      storage.syncWithBackend();
+      // Refresh cache from server
+      await storage.syncWithBackend();
 
       setIsSaving(false);
       toast.success('New cattle registered successfully!', {

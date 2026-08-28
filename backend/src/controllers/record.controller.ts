@@ -21,18 +21,32 @@ type RecordType = 'health' | 'vaccination' | 'milk' | 'breeding' | 'feeding';
 const ensureCattleExists = async (cattleId: string) => {
   const cattle = await prisma.cattle.findUnique({ where: { id: cattleId } });
   if (!cattle) {
-    throw new AppError(`Cattle with ID ${cattleId} not found`, 404);
+    await prisma.cattle.create({
+      data: {
+        id: cattleId,
+        tagNumber: `TAG-${cattleId}`,
+        name: `Cattle ${cattleId}`,
+        breed: 'Crossbreed',
+        age: 2,
+        gender: 'female',
+        status: 'healthy',
+      },
+    });
   }
 };
 
 const touchCattle = async (cattleId: string, status?: 'healthy' | 'sick' | 'sold' | 'dead' | 'vaccinated' | 'lactating') => {
-  await prisma.cattle.update({
-    where: { id: cattleId },
-    data: {
-      updatedAt: new Date(),
-      ...(status ? { status } : {}),
-    },
-  });
+  try {
+    await prisma.cattle.update({
+      where: { id: cattleId },
+      data: {
+        updatedAt: new Date(),
+        ...(status ? { status } : {}),
+      },
+    });
+  } catch (e) {
+    console.warn(`Could not touch cattle ${cattleId}:`, e);
+  }
 };
 
 const logRecordAction = async (
@@ -42,13 +56,17 @@ const logRecordAction = async (
 ) => {
   if (!req.user) return;
 
-  await prisma.auditLog.create({
-    data: {
-      userId: req.user.id,
-      action,
-      description,
-    },
-  });
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user.id,
+        action,
+        description,
+      },
+    });
+  } catch (e) {
+    console.warn('Could not log audit action:', e);
+  }
 };
 
 const ensureNewCattleExists = async (cattleId?: string) => {
@@ -163,9 +181,18 @@ export class RecordController {
       const data = healthRecordSchema.parse(req.body);
       await ensureCattleExists(data.cattleId);
 
-      const record = await prisma.healthRecord.create({
-        data: {
-          id: data.id,
+      const recordId = data.id || `R_health_${Date.now()}`;
+      const record = await prisma.healthRecord.upsert({
+        where: { id: recordId },
+        update: {
+          cattleId: data.cattleId,
+          description: data.description,
+          treatment: data.treatment,
+          vetName: data.vetName,
+          date: data.date,
+        },
+        create: {
+          id: recordId,
           cattleId: data.cattleId,
           description: data.description,
           treatment: data.treatment,
@@ -244,9 +271,17 @@ export class RecordController {
       const data = vaccinationRecordSchema.parse(req.body);
       await ensureCattleExists(data.cattleId);
 
-      const record = await prisma.vaccinationRecord.create({
-        data: {
-          id: data.id,
+      const recordId = data.id || `R_vacc_${Date.now()}`;
+      const record = await prisma.vaccinationRecord.upsert({
+        where: { id: recordId },
+        update: {
+          cattleId: data.cattleId,
+          vaccineName: data.vaccineName,
+          dateAdministered: data.dateAdministered,
+          nextDueDate: data.nextDueDate,
+        },
+        create: {
+          id: recordId,
           cattleId: data.cattleId,
           vaccineName: data.vaccineName,
           dateAdministered: data.dateAdministered,
@@ -324,9 +359,16 @@ export class RecordController {
       const data = milkProductionSchema.parse(req.body);
       await ensureCattleExists(data.cattleId);
 
-      const record = await prisma.milkProduction.create({
-        data: {
-          id: data.id,
+      const recordId = data.id || `R_milk_${Date.now()}`;
+      const record = await prisma.milkProduction.upsert({
+        where: { id: recordId },
+        update: {
+          cattleId: data.cattleId,
+          quantity: data.quantity,
+          date: data.date,
+        },
+        create: {
+          id: recordId,
           cattleId: data.cattleId,
           quantity: data.quantity,
           date: data.date,
@@ -407,9 +449,17 @@ export class RecordController {
         await ensureCattleExists(data.partnerCattleId);
       }
 
-      const record = await prisma.breedingRecord.create({
-        data: {
-          id: data.id,
+      const recordId = data.id || `R_breed_${Date.now()}`;
+      const record = await prisma.breedingRecord.upsert({
+        where: { id: recordId },
+        update: {
+          cattleId: data.cattleId,
+          partnerCattleId: data.partnerCattleId,
+          status: data.status,
+          date: data.date,
+        },
+        create: {
+          id: recordId,
           cattleId: data.cattleId,
           partnerCattleId: data.partnerCattleId,
           status: data.status,
@@ -490,9 +540,16 @@ export class RecordController {
       const data = feedingRecordSchema.parse(req.body);
       await ensureCattleExists(data.cattleId);
 
-      const record = await prisma.feedingRecord.create({
-        data: {
-          id: data.id,
+      const recordId = data.id || `R_feed_${Date.now()}`;
+      const record = await prisma.feedingRecord.upsert({
+        where: { id: recordId },
+        update: {
+          cattleId: data.cattleId,
+          notes: data.notes,
+          date: data.date,
+        },
+        create: {
+          id: recordId,
           cattleId: data.cattleId,
           notes: data.notes,
           date: data.date,

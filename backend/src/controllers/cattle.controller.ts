@@ -14,6 +14,7 @@ export class CattleController {
       // Map to frontend expected format
       const formattedCattle = cattle.map(c => ({
         id: c.id,
+        tagNumber: c.tagNumber,
         name: c.name,
         breed: c.breed,
         age: c.age,
@@ -128,11 +129,11 @@ export class CattleController {
         });
       });
 
-      // Sort consolidated records chronologically
       records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
       const formattedCattle = {
         id: cattle.id,
+        tagNumber: cattle.tagNumber,
         name: cattle.name,
         breed: cattle.breed,
         age: cattle.age,
@@ -159,24 +160,17 @@ export class CattleController {
       const id = data.id || `C${String(Date.now()).slice(-4)}`;
       const tagNumber = data.tagNumber || `TAG-${id}`;
 
-      // Check if tag number already exists
-      const existingCattle = await prisma.cattle.findUnique({
-        where: { tagNumber },
-      });
-      if (existingCattle) {
-        throw new AppError(`Cattle with tag number ${tagNumber} already exists`, 400);
-      }
-
-      // Check if ID is unique
-      const existingId = await prisma.cattle.findUnique({
+      const cattle = await prisma.cattle.upsert({
         where: { id },
-      });
-      if (existingId) {
-        throw new AppError(`Cattle with ID ${id} already exists`, 400);
-      }
-
-      const cattle = await prisma.cattle.create({
-        data: {
+        update: {
+          tagNumber,
+          name: data.name,
+          breed: data.breed,
+          age: data.age,
+          gender: data.gender,
+          status: data.status,
+        },
+        create: {
           id,
           tagNumber,
           name: data.name,
@@ -193,7 +187,7 @@ export class CattleController {
           data: {
             userId: req.user.id,
             action: 'CREATE_CATTLE',
-            description: `Created cattle ${cattle.name} with Tag ${cattle.tagNumber}`,
+            description: `Created/Updated cattle ${cattle.name} with Tag ${cattle.tagNumber}`,
           },
         });
       }
@@ -211,30 +205,26 @@ export class CattleController {
     try {
       const { id } = req.params;
       const data = updateCattleSchema.parse(req.body);
+      const tagNumber = data.tagNumber || `TAG-${id}`;
 
-      const cattle = await prisma.cattle.findUnique({ where: { id } });
-      if (!cattle) {
-        throw new AppError(`Cattle record ${id} not found`, 404);
-      }
-
-      if (data.tagNumber) {
-        const existingCattle = await prisma.cattle.findFirst({
-          where: { tagNumber: data.tagNumber, NOT: { id } },
-        });
-        if (existingCattle) {
-          throw new AppError(`Cattle with tag number ${data.tagNumber} already exists`, 400);
-        }
-      }
-
-      const updatedCattle = await prisma.cattle.update({
+      const updatedCattle = await prisma.cattle.upsert({
         where: { id },
-        data: {
-          tagNumber: data.tagNumber,
-          name: data.name,
-          breed: data.breed,
+        update: {
+          tagNumber: data.tagNumber !== undefined ? data.tagNumber : undefined,
+          name: data.name !== undefined ? data.name : undefined,
+          breed: data.breed !== undefined ? data.breed : undefined,
           age: data.age !== undefined ? data.age : undefined,
-          gender: data.gender,
-          status: data.status,
+          gender: data.gender !== undefined ? data.gender : undefined,
+          status: data.status !== undefined ? data.status : undefined,
+        },
+        create: {
+          id,
+          tagNumber,
+          name: data.name || 'Unknown',
+          breed: data.breed || 'Crossbreed',
+          age: data.age || 1,
+          gender: data.gender || 'female',
+          status: data.status || 'healthy',
         },
       });
 

@@ -127,7 +127,8 @@ export function AddRecordScreen() {
         });
       }
 
-      storage.syncWithBackend();
+      // Refresh cache from server
+      await storage.syncWithBackend();
       setIsSaving(false);
       toast.success('Record updated successfully!');
       navigate(`/cattle/profile/${cattleId}`, { replace: true });
@@ -211,7 +212,8 @@ export function AddRecordScreen() {
         });
       }
 
-      storage.syncWithBackend();
+      // Refresh cache from server
+      await storage.syncWithBackend();
       setIsSaving(false);
       toast.success('Activity record saved successfully!');
       navigate(`/cattle/profile/${cattleId}`, { replace: true });
