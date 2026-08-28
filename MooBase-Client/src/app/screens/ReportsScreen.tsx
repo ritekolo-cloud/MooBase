@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import {
-  ArrowLeft,
   Download,
   TrendingUp,
   Activity,
@@ -15,7 +14,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
-  Info,
 } from 'lucide-react';
 import {
   LineChart,
@@ -42,8 +40,6 @@ interface ReportSummary {
   sickCount: number;
   lactatingCount: number;
   vaccinatedCount: number;
-  soldCount?: number;
-  deadCount?: number;
   statusDistribution: Array<{ name: string; value: number; color: string }>;
   totalRecords: number;
   healthCount: number;
@@ -56,7 +52,6 @@ interface ReportSummary {
   averageDailyMilk: number;
   totalMilkIn30Days: number;
   totalMilkAllTime: number;
-  unavailableMetrics?: Array<{ id: string; name: string; reason: string }>;
 }
 
 interface MilkTrendPoint {
@@ -94,7 +89,6 @@ export function ReportsScreen() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [isUsingLocalData, setIsUsingLocalData] = useState(false);
 
-  // Live Analytical State
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [milkTrend, setMilkTrend] = useState<MilkTrendPoint[]>([]);
   const [vaccinationStatus, setVaccinationStatus] = useState<{
@@ -110,7 +104,6 @@ export function ReportsScreen() {
     }
   }, [user, navigate]);
 
-  // Compute read-only operational analytics from local storage cache
   const computeLocalAnalytics = useMemo(() => {
     return () => {
       const localCattle = storage.getCattle();
@@ -127,7 +120,6 @@ export function ReportsScreen() {
       const milkCount = localRecords.filter((r) => r.type === 'milk').length;
       const breedingCount = localRecords.filter((r) => r.type === 'breeding').length;
 
-      // 7-day continuous milk production from operational milk records
       const milkDays: MilkTrendPoint[] = [];
       let totalMilk7Days = 0;
 
@@ -150,7 +142,6 @@ export function ReportsScreen() {
         });
 
         totalMilk7Days += dayTotal;
-
         milkDays.push({
           date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           rawDate: dateKey,
@@ -159,7 +150,6 @@ export function ReportsScreen() {
         });
       }
 
-      // Total milk across all operational records
       let allTimeMilk = 0;
       localRecords
         .filter((r) => r.type === 'milk')
@@ -182,8 +172,8 @@ export function ReportsScreen() {
         statusDistribution: [
           { name: 'Healthy', value: healthy, color: '#16A34A' },
           { name: 'Sick', value: sick, color: '#DC2626' },
-          { name: 'Lactating', value: lactating, color: '#1E3A8A' },
-          { name: 'Vaccinated', value: vaccinated, color: '#F59E0B' },
+          { name: 'Lactating', value: lactating, color: '#1E40AF' },
+          { name: 'Vaccinated', value: vaccinated, color: '#D97706' },
         ],
         totalRecords: localRecords.length,
         healthCount,
@@ -204,23 +194,6 @@ export function ReportsScreen() {
         averageDailyMilk: avgDaily,
         totalMilkIn30Days: totalMilk7Days,
         totalMilkAllTime: allTimeMilk,
-        unavailableMetrics: [
-          {
-            id: 'financial_revenue',
-            name: 'Milk Sales & Financial Revenue',
-            reason: 'Missing pricePerLiter or sales transaction table in database schema',
-          },
-          {
-            id: 'feed_conversion_ratio',
-            name: 'Feed Weight & Cost Analysis',
-            reason: 'FeedingRecord stores unstructured notes; lacks weightKg and costPerKg fields',
-          },
-          {
-            id: 'calving_projections',
-            name: 'Expected Calving Projections',
-            reason: 'BreedingRecord lacks expectedCalvingDate and inseminationType fields',
-          },
-        ],
       };
 
       return { localSummaryData, milkDays };
@@ -234,39 +207,28 @@ export function ReportsScreen() {
     const token = localStorage.getItem('moobase_access_token') || '';
 
     try {
-      // 1. Fetch live analytical summary from backend
       const [summaryRes, milkRes, healthRes, vaccRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/reports/summary`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE_URL}/reports/milk-production?days=7`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE_URL}/reports/health-status`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE_URL}/reports/vaccination-status`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        fetch(`${API_BASE_URL}/reports/summary`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/reports/milk-production?days=7`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/reports/health-status`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE_URL}/reports/vaccination-status`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
-      if (!summaryRes.ok || !milkRes.ok) {
-        throw new Error(`Analytics API returned status ${summaryRes.status}`);
-      }
+      if (!summaryRes.ok || !milkRes.ok) throw new Error(`API error ${summaryRes.status}`);
 
       const summaryData = await summaryRes.json();
       const milkData = await milkRes.json();
       const healthData = healthRes.ok ? await healthRes.json() : { data: [] };
       const vaccData = vaccRes.ok ? await vaccRes.json() : { data: { overdue: [], upcoming: [] } };
 
-      setSummary(summaryData.data);
+      const { unavailableMetrics: _dropped, ...cleanSummary } = summaryData.data || {};
+      setSummary(cleanSummary);
       setMilkTrend(milkData.data);
       setSickCattleList(healthData.data || []);
       setVaccinationStatus(vaccData.data || { overdue: [], upcoming: [] });
       setIsUsingLocalData(false);
     } catch (err: any) {
-      console.warn('Could not fetch online analytics. Analyzing local operational records...', err);
-      // Operational offline fallback: calculate exact metrics from locally cached operational records
+      console.warn('Using local cache for reportsâ€¦', err);
       const { localSummaryData, milkDays } = computeLocalAnalytics();
       setSummary(localSummaryData);
       setMilkTrend(milkDays);
@@ -280,56 +242,32 @@ export function ReportsScreen() {
     loadReportData();
   }, []);
 
-  // CSV Export generated directly from actual analytical dataset
   const handleExportCSV = () => {
-    if (!summary) {
-      toast.error('No analytical data available to export');
-      return;
-    }
+    if (!summary) { toast.error('No data available to export'); return; }
 
     const rows: string[] = [];
-    rows.push('KAYERA FARM ANALYTICAL REPORT');
-    rows.push(`Generated On,${new Date().toISOString()}`);
-    rows.push(`Data Source,${isUsingLocalData ? 'Local Operational Cache' : 'Authoritative Backend Database'}`);
+    rows.push('KAYERA FARM - LIVESTOCK REPORTS & ANALYTICS');
+    rows.push(`Generated,${new Date().toLocaleString()}`);
     rows.push('');
-
-    // Summary Section
-    rows.push('--- EXECUTIVE SUMMARY ---');
+    rows.push('--- FARM OVERVIEW ---');
     rows.push('Metric,Value');
     rows.push(`Total Cattle,${summary.totalCattle}`);
     rows.push(`Healthy Cattle,${summary.healthyCount}`);
-    rows.push(`Sick Cattle (Alerts),${summary.sickCount}`);
+    rows.push(`Cattle Requiring Attention,${summary.sickCount}`);
     rows.push(`Lactating Cattle,${summary.lactatingCount}`);
     rows.push(`Vaccinated Cattle,${summary.vaccinatedCount}`);
-    rows.push(`Total Records Logged,${summary.totalRecords}`);
-    rows.push(`Average Daily Milk (Liters),${summary.averageDailyMilk}`);
-    rows.push(`Total Milk Production (Liters),${summary.totalMilkAllTime}`);
+    rows.push(`Total Records,${summary.totalRecords}`);
+    rows.push(`Records Today,${summary.todayRecords}`);
+    rows.push(`Average Daily Milk (L),${summary.averageDailyMilk}`);
+    rows.push(`Total Milk Production (L),${summary.totalMilkAllTime}`);
     rows.push('');
-
-    // Milk Production Table
-    rows.push('--- 7-DAY MILK PRODUCTION ---');
-    rows.push('Date,Liters Produced,Records Count');
-    milkTrend.forEach((m) => {
-      rows.push(`${m.rawDate || m.date},${m.production},${m.recordCount || 0}`);
-    });
+    rows.push('--- MILK PRODUCTION (7 DAYS) ---');
+    rows.push('Date,Litres,Records');
+    milkTrend.forEach((m) => rows.push(`${m.rawDate || m.date},${m.production},${m.recordCount || 0}`));
     rows.push('');
-
-    // Records by Category Table
     rows.push('--- RECORDS BY CATEGORY ---');
-    rows.push('Category,Record Count');
-    summary.recordsByType.forEach((r) => {
-      rows.push(`${r.name},${r.count}`);
-    });
-    rows.push('');
-
-    // Data Dependency Gaps Section
-    if (summary.unavailableMetrics && summary.unavailableMetrics.length > 0) {
-      rows.push('--- IDENTIFIED SCHEMA DATA DEPENDENCY GAPS ---');
-      rows.push('Metric,Status,Reason');
-      summary.unavailableMetrics.forEach((g) => {
-        rows.push(`"${g.name}",Unavailable,"${g.reason}"`);
-      });
-    }
+    rows.push('Category,Count');
+    summary.recordsByType.forEach((r) => rows.push(`${r.name},${r.count}`));
 
     const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.join('\n'));
     const link = document.createElement('a');
@@ -338,498 +276,439 @@ export function ReportsScreen() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    toast.success('Kayera Farm analytical report exported as CSV!');
+    toast.success('Report exported successfully!');
   };
 
-  const kpis = useMemo(() => {
-    if (!summary) return [];
-    return [
-      {
-        label: 'Total Cattle',
-        value: summary.totalCattle,
-        icon: Users,
-        onClick: () => navigate('/cattle'),
+  // Recent activity and per-category lists from local cache
+  const { recentActivity, localRecordsByType } = useMemo(() => {
+    if (!summary) return {
+      recentActivity: [],
+      localRecordsByType: { health: [], vaccination: [], milk: [], breeding: [], feeding: [] },
+    };
+    const cattle = storage.getCattle();
+    const records = storage.getRecords();
+    const cattleMap = Object.fromEntries(cattle.map((c) => [c.id, c]));
+
+    const enrich = (r: any) => ({
+      id: r.id,
+      cattleName: cattleMap[r.cattleId]?.name || r.cattleId,
+      tagNumber: cattleMap[r.cattleId]?.tagNumber || '',
+      type: r.type,
+      date: r.date,
+      notes: r.notes,
+      data: r.data,
+    });
+
+    const sorted = records
+      .slice()
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const byType = (type: string) =>
+      sorted.filter((r) => r.type === type).slice(0, 5).map(enrich);
+
+    return {
+      recentActivity: sorted.slice(0, 10).map(enrich),
+      localRecordsByType: {
+        health: byType('health'),
+        vaccination: byType('vaccination'),
+        milk: byType('milk'),
+        breeding: byType('breeding'),
+        feeding: byType('feeding'),
       },
-      {
-        label: 'Total Records',
-        value: summary.totalRecords,
-        icon: FileText,
-        onClick: () => navigate('/cattle'),
-      },
-      {
-        label: 'Vaccinations',
-        value: summary.vaccinationCount,
-        icon: Syringe,
-        onClick: () => navigate('/cattle', { state: { filter: 'vaccinated' } }),
-      },
-      {
-        label: 'Health Alerts',
-        value: summary.sickCount,
-        icon: AlertCircle,
-        danger: summary.sickCount > 0,
-        onClick: () => navigate('/cattle', { state: { filter: 'sick' } }),
-      },
-    ];
-  }, [summary, navigate]);
+    };
+  }, [summary]);
+
+  const fmtDate = (d: string) =>
+    new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const recordTypeBadge: Record<string, string> = {
+    health: 'bg-red-100 text-red-700',
+    vaccination: 'bg-amber-100 text-amber-700',
+    milk: 'bg-blue-100 text-blue-700',
+    breeding: 'bg-purple-100 text-purple-700',
+    feeding: 'bg-green-100 text-green-700',
+  };
+
+  const recordTypeLabel: Record<string, string> = {
+    health: 'Health',
+    vaccination: 'Vaccination',
+    milk: 'Milk',
+    breeding: 'Breeding',
+    feeding: 'Feeding',
+  };
+
+  const RecordList = ({ items }: { items: any[] }) => (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+      <div className="divide-y divide-border">
+        {items.map((r) => (
+          <div key={r.id} className="px-4 py-3 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground truncate">
+                {r.cattleName}
+                {r.tagNumber && <span className="text-muted-foreground font-normal ml-1 text-xs">({r.tagNumber})</span>}
+              </p>
+              {r.notes && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.notes}</p>}
+            </div>
+            <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">{fmtDate(r.date)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const EmptyCard = ({ icon: Icon, message, sub }: { icon: any; message: string; sub: string }) => (
+    <div className="bg-card border border-border rounded-2xl p-6 flex flex-col items-center text-center shadow-sm">
+      <Icon className="w-8 h-8 text-muted-foreground mb-2 opacity-40" />
+      <p className="text-sm font-medium text-foreground">{message}</p>
+      <p className="text-xs text-muted-foreground mt-1">{sub}</p>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-background pb-8 flex flex-col font-sans">
-      {/* Header */}
-      <div className="bg-card border-b border-[#E5E7EB] sticky top-0 z-20 transition-colors duration-150 ease-out">
-        <div className="max-w-[1280px] mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/manager/dashboard')}
-              className="p-1 -ml-1 text-muted-foreground hover:bg-muted hover:text-foreground rounded-md transition-all duration-150 ease-out"
-            >
-              <ArrowLeft className="w-[20px] h-[20px]" />
-            </button>
+    <div className="min-h-screen bg-background pb-20 flex flex-col font-sans">
+
+      {/* Page Header */}
+      <div className="px-5 pt-6 pb-7 text-white" style={{ background: '#0F3D18' }}>
+        <div className="max-w-[1280px] mx-auto">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="text-[36px] font-bold text-foreground tracking-tight leading-tight">
-                Farm Reports
-              </h1>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span
-                  className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded ${
-                    isUsingLocalData
-                      ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                      : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isUsingLocalData ? 'bg-amber-600' : 'bg-emerald-600'
-                    }`}
-                  />
-                  {isUsingLocalData ? 'Local Operational Analytics' : 'Authoritative Database Analytics'}
-                </span>
-              </div>
+              <p className="text-white/60 text-[11px] font-semibold tracking-widest uppercase mb-1">Kayera Farm</p>
+              <h1 className="text-[22px] font-bold text-white tracking-tight leading-tight">Reports &amp; Analytics</h1>
+              <p className="text-white/65 text-sm mt-1">Monitor cattle records, health, production and farm activities.</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0 mt-1">
+              <button
+                onClick={loadReportData}
+                disabled={isLoading}
+                title="Refresh"
+                className="h-9 w-9 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+              >
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={handleExportCSV}
+                disabled={isLoading || !summary}
+                className="h-9 px-4 flex items-center gap-2 rounded-lg bg-white text-[#0F3D18] font-semibold text-sm hover:bg-white/90 transition-colors disabled:opacity-50"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Export</span>
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={loadReportData}
-              disabled={isLoading}
-              className="h-[44px] px-3.5 bg-card border border-border text-foreground rounded-[10px] text-sm font-medium hover:bg-muted transition-colors flex items-center gap-2"
-              title="Refresh analytical queries"
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
-            <button
-              onClick={handleExportCSV}
-              disabled={isLoading || !summary}
-              className="h-[44px] px-6 bg-primary text-primary-foreground rounded-[10px] font-semibold text-[14px] hover:bg-primary/90 transition-all duration-150 ease-out flex items-center gap-2 shadow-[0_6px_18px_rgba(27,94,32,0.15)] active:scale-98 disabled:opacity-50"
-            >
-              <Download className="w-[18px] h-[18px]" />
-              <span>Export CSV</span>
-            </button>
+          <div className="mt-3">
+            <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full ${isUsingLocalData ? 'bg-amber-400/20 text-amber-200 border border-amber-400/30' : 'bg-green-400/20 text-green-200 border border-green-400/30'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isUsingLocalData ? 'bg-amber-300' : 'bg-green-300'}`} />
+              {isUsingLocalData ? 'Local records' : 'Live database'}
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 px-6 py-8 max-w-[1280px] mx-auto w-full space-y-8">
+      {/* Body */}
+      <div className="flex-1 px-4 sm:px-6 py-6 max-w-[1280px] mx-auto w-full space-y-6">
+
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20">
+          <div className="flex flex-col items-center justify-center py-24">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full mb-4"
+              className="w-10 h-10 border-[3px] border-primary border-t-transparent rounded-full mb-4"
             />
-            <p className="text-muted-foreground text-sm font-medium">
-              Aggregating operational database records...
-            </p>
+            <p className="text-muted-foreground text-sm font-medium">Loading farm reports...</p>
           </div>
         ) : apiError ? (
           <div className="p-6 bg-destructive/10 border border-destructive/20 rounded-xl text-center">
             <AlertTriangle className="w-8 h-8 text-destructive mx-auto mb-2" />
-            <h3 className="text-base font-semibold text-destructive">Analytics Query Error</h3>
+            <h3 className="text-base font-semibold text-destructive">Could not load report data</h3>
             <p className="text-sm text-muted-foreground mt-1">{apiError}</p>
-            <button
-              onClick={loadReportData}
-              className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium"
-            >
-              Retry Database Queries
+            <button onClick={loadReportData} className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
+              Try Again
             </button>
           </div>
         ) : summary ? (
           <>
-            {/* KPI Overview */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[20px] font-semibold text-foreground tracking-tight">
-                  Overview KPIs
-                </h2>
-                <span className="text-xs text-muted-foreground">
-                  Today's Activity: {summary.todayRecords} logs
-                </span>
-              </div>
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="grid grid-cols-2 md:grid-cols-4 gap-6"
-              >
-                {kpis.map((kpi) => {
+            {/* 1. Farm Overview */}
+            <section>
+              <h2 className="text-[15px] font-bold text-foreground mb-3">Farm Overview</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: 'Total Cattle', value: summary.totalCattle, icon: Users, iconColor: 'text-[#1A5C2A]', bg: 'bg-green-50', alert: false },
+                  { label: 'Healthy', value: summary.healthyCount, icon: CheckCircle2, iconColor: 'text-[#16A34A]', bg: 'bg-green-50', alert: false },
+                  { label: 'Need Attention', value: summary.sickCount, icon: AlertCircle, iconColor: 'text-destructive', bg: 'bg-red-50', alert: summary.sickCount > 0 },
+                  { label: 'Records Today', value: summary.todayRecords, icon: Clock, iconColor: 'text-[#1E40AF]', bg: 'bg-blue-50', alert: false },
+                ].map((kpi) => {
                   const Icon = kpi.icon;
                   return (
-                    <button
+                    <motion.div
                       key={kpi.label}
-                      onClick={kpi.onClick}
-                      className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] hover:border-[#1B5E20]/30 hover:bg-muted/30 transition-all duration-150 ease-out text-left cursor-pointer group"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={`bg-card border rounded-2xl p-4 shadow-sm ${kpi.alert ? 'border-red-200' : 'border-border'}`}
                     >
-                      <div className="flex items-center gap-2 mb-3">
-                        <Icon
-                          className={`w-[22px] h-[22px] ${
-                            kpi.danger ? 'text-destructive' : 'text-muted-foreground'
-                          }`}
-                        />
-                        <span className="text-[14px] font-medium text-muted-foreground">
-                          {kpi.label}
-                        </span>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3 ${kpi.bg}`}>
+                        <Icon className={`w-4 h-4 ${kpi.iconColor}`} />
                       </div>
-                      <p className="text-[36px] font-bold text-foreground leading-none">
-                        {kpi.value}
-                      </p>
-                    </button>
+                      <p className="text-[28px] font-bold text-foreground leading-none">{kpi.value}</p>
+                      <p className="text-xs text-muted-foreground mt-1 font-medium">{kpi.label}</p>
+                    </motion.div>
                   );
                 })}
-              </motion.div>
-            </section>
-
-            {/* Charts Grid */}
-            <section className="space-y-4">
-              <h2 className="text-[20px] font-semibold text-foreground tracking-tight">
-                Operational Analytics
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Real Milk Production Line Chart */}
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.15, ease: 'easeOut', delay: 0.05 }}
-                  className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)]"
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <TrendingUp className="w-[22px] h-[22px] text-secondary" />
-                      <div>
-                        <h3 className="text-[18px] font-semibold text-foreground">
-                          Milk Production Trend
-                        </h3>
-                        <p className="text-[14px] text-muted-foreground">
-                          Continuous 7-day output (liters)
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs text-muted-foreground font-medium block">Avg/Day</span>
-                      <span className="text-sm font-bold text-foreground">
-                        {summary.averageDailyMilk} L
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-[250px] w-full">
-                    {milkTrend.length === 0 || milkTrend.every((m) => m.production === 0) ? (
-                      <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-                        <Calendar className="w-8 h-8 mb-2 opacity-40" />
-                        <p className="text-sm font-medium">No milk production logs in past 7 days</p>
-                        <p className="text-xs mt-0.5">Recorded daily yields will display here</p>
-                      </div>
-                    ) : (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={milkTrend}
-                          margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                          <XAxis
-                            dataKey="date"
-                            tick={{ fontSize: 12, fill: '#6B7280' }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <YAxis
-                            tick={{ fontSize: 12, fill: '#6B7280' }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <Tooltip
-                            contentStyle={{
-                              borderRadius: '10px',
-                              border: '1px solid #E5E7EB',
-                              boxShadow: '0 6px 18px rgba(0,0,0,0.06)',
-                              fontSize: '14px',
-                            }}
-                            labelStyle={{
-                              fontWeight: 'bold',
-                              color: '#111827',
-                              marginBottom: '4px',
-                            }}
-                            formatter={(val: any) => [`${val} Liters`, 'Yield']}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="production"
-                            stroke="#1E3A8A"
-                            strokeWidth={2.5}
-                            dot={{ fill: '#1E3A8A', r: 4, strokeWidth: 0 }}
-                            activeDot={{ r: 6, strokeWidth: 0 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    )}
-                  </div>
-                </motion.div>
-
-                {/* Health Status Pie Chart */}
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.15, ease: 'easeOut', delay: 0.1 }}
-                  className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)]"
-                >
-                  <div className="flex items-center gap-3 mb-6">
-                    <Activity className="w-[22px] h-[22px] text-success" />
-                    <div>
-                      <h3 className="text-[18px] font-semibold text-foreground">Herd Health Status</h3>
-                      <p className="text-[14px] text-muted-foreground">Current herd distribution</p>
-                    </div>
-                  </div>
-                  <div className="h-[250px] w-full">
-                    {summary.totalCattle === 0 ? (
-                      <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-                        <Users className="w-8 h-8 mb-2 opacity-40" />
-                        <p className="text-sm font-medium">No cattle records in database</p>
-                      </div>
-                    ) : (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={summary.statusDistribution}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={90}
-                            innerRadius={55}
-                            dataKey="value"
-                            stroke="none"
-                          >
-                            {summary.statusDistribution.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={{
-                              borderRadius: '10px',
-                              border: '1px solid #E5E7EB',
-                              boxShadow: '0 6px 18px rgba(0,0,0,0.06)',
-                              fontSize: '14px',
-                            }}
-                            formatter={(val: any) => [`${val} Animals`, 'Count']}
-                          />
-                          <Legend iconType="circle" wrapperStyle={{ fontSize: '14px' }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    )}
-                  </div>
-                </motion.div>
-
-                {/* Records by Type Bar Chart - full width */}
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.15, ease: 'easeOut', delay: 0.15 }}
-                  className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)] md:col-span-2"
-                >
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-[22px] h-[22px] text-primary" />
-                      <div>
-                        <h3 className="text-[18px] font-semibold text-foreground">
-                          Logged Operational Records by Entity
-                        </h3>
-                        <p className="text-[14px] text-muted-foreground">
-                          Breakdown across health, vaccination, feeding, milk, breeding tables
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-sm font-bold text-foreground">
-                      {summary.totalRecords} Total Logs
-                    </span>
-                  </div>
-                  <div className="h-[250px] w-full">
-                    {summary.totalRecords === 0 ? (
-                      <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
-                        <FileText className="w-8 h-8 mb-2 opacity-40" />
-                        <p className="text-sm font-medium">No operational records logged yet</p>
-                      </div>
-                    ) : (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={summary.recordsByType}
-                          margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                          <XAxis
-                            dataKey="name"
-                            tick={{ fontSize: 12, fill: '#6B7280' }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <YAxis
-                            tick={{ fontSize: 12, fill: '#6B7280' }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <Tooltip
-                            cursor={{ fill: '#F9FAFB' }}
-                            contentStyle={{
-                              borderRadius: '10px',
-                              border: '1px solid #E5E7EB',
-                              boxShadow: '0 6px 18px rgba(0,0,0,0.06)',
-                              fontSize: '14px',
-                            }}
-                            itemStyle={{ color: '#1B5E20' }}
-                            labelStyle={{
-                              fontWeight: 'bold',
-                              color: '#111827',
-                              marginBottom: '4px',
-                            }}
-                            formatter={(val: any) => [`${val} Entries`, 'Logged']}
-                          />
-                          <Bar dataKey="count" fill="#1B5E20" radius={[6, 6, 0, 0]} maxBarSize={60} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </div>
-                </motion.div>
               </div>
-            </section>
-
-            {/* Vaccination & Health Schedules Breakdown */}
-            {(vaccinationStatus.overdue.length > 0 ||
-              vaccinationStatus.upcoming.length > 0 ||
-              sickCattleList.length > 0) && (
-              <section className="space-y-4">
-                <h2 className="text-[20px] font-semibold text-foreground tracking-tight">
-                  Medical & Veterinary Logs
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Vaccination Schedule Table */}
-                  <div className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)]">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Syringe className="w-5 h-5 text-primary" />
-                      <h3 className="text-base font-semibold text-foreground">
-                        Vaccination Status Tracking
-                      </h3>
-                    </div>
-                    {vaccinationStatus.overdue.length === 0 &&
-                    vaccinationStatus.upcoming.length === 0 ? (
-                      <p className="text-xs text-muted-foreground py-4 text-center">
-                        No upcoming or overdue vaccinations.
-                      </p>
-                    ) : (
-                      <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 divide-y divide-border">
-                        {vaccinationStatus.overdue.map((item) => (
-                          <div key={item.id} className="pt-2 flex items-center justify-between text-xs">
-                            <div>
-                              <p className="font-semibold text-foreground">{item.cattleName}</p>
-                              <p className="text-muted-foreground">{item.vaccineName}</p>
-                            </div>
-                            <span className="px-2 py-0.5 rounded bg-destructive/10 text-destructive border border-destructive/20 font-medium">
-                              Overdue ({new Date(item.dueDate).toLocaleDateString()})
-                            </span>
-                          </div>
-                        ))}
-                        {vaccinationStatus.upcoming.map((item) => (
-                          <div key={item.id} className="pt-2 flex items-center justify-between text-xs">
-                            <div>
-                              <p className="font-semibold text-foreground">{item.cattleName}</p>
-                              <p className="text-muted-foreground">{item.vaccineName}</p>
-                            </div>
-                            <span className="px-2 py-0.5 rounded bg-muted text-foreground border border-border font-medium">
-                              Due: {new Date(item.dueDate).toLocaleDateString()}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Sick Cattle Treatments Table */}
-                  <div className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)]">
-                    <div className="flex items-center gap-2 mb-4">
-                      <AlertCircle className="w-5 h-5 text-destructive" />
-                      <h3 className="text-base font-semibold text-foreground">
-                        Active Health Treatments
-                      </h3>
-                    </div>
-                    {sickCattleList.length === 0 ? (
-                      <div className="flex items-center justify-center py-8 text-success gap-2 text-xs font-medium">
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>All herd members currently healthy. No active treatments.</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
-                        {sickCattleList.map((item) => (
-                          <div
-                            key={item.cattleId}
-                            className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg text-xs"
-                          >
-                            <div className="flex items-center justify-between font-semibold text-foreground">
-                              <span>
-                                {item.name} ({item.breed})
-                              </span>
-                              <span className="text-destructive font-medium">
-                                {new Date(item.dateDetected).toLocaleDateString()}
-                              </span>
-                            </div>
-                            <p className="text-muted-foreground mt-1">{item.description}</p>
-                            <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
-                              <span>Rx: {item.treatment}</span>
-                              <span>Vet: {item.vetName}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* Identified Data Dependency Gaps Section */}
-            <section className="bg-card border border-[#E5E7EB] rounded-[12px] p-6 shadow-[0_6px_18px_rgba(0,0,0,0.06)]">
-              <div className="flex items-center gap-2 mb-3">
-                <Info className="w-5 h-5 text-muted-foreground" />
-                <h3 className="text-base font-semibold text-foreground">
-                  Identified Schema Data Dependencies & Gaps
-                </h3>
-              </div>
-              <p className="text-xs text-muted-foreground mb-4">
-                The following analytical dimensions cannot currently be calculated because the
-                underlying operational database schema does not capture these attributes. They are
-                explicitly documented here rather than fabricated.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {summary.unavailableMetrics?.map((gap) => (
-                  <div
-                    key={gap.id}
-                    className="p-4 bg-muted/40 border border-border rounded-lg text-xs space-y-1.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-foreground">{gap.name}</span>
-                      <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-semibold border border-border">
-                        Unavailable
-                      </span>
-                    </div>
-                    <p className="text-muted-foreground leading-relaxed">{gap.reason}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                {[
+                  { label: 'Health Records', value: summary.healthCount },
+                  { label: 'Vaccination Records', value: summary.vaccinationCount },
+                  { label: 'Milk Records', value: summary.milkCount },
+                  { label: 'Feeding Records', value: summary.feedingCount },
+                ].map((s) => (
+                  <div key={s.label} className="bg-card border border-border rounded-xl px-4 py-3 shadow-sm">
+                    <p className="text-xl font-bold text-foreground">{s.value}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{s.label}</p>
                   </div>
                 ))}
               </div>
             </section>
+
+            {/* 2. Charts */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* Milk trend */}
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="w-4 h-4 text-[#1E40AF]" />
+                  <h3 className="text-sm font-bold text-foreground">Milk Production - 7 Days</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Avg/day: <span className="font-semibold text-foreground">{summary.averageDailyMilk} L</span>
+                  &nbsp;&middot;&nbsp; All-time: <span className="font-semibold text-foreground">{summary.totalMilkAllTime} L</span>
+                </p>
+                <div className="h-[200px]">
+                  {milkTrend.length === 0 || milkTrend.every((m) => m.production === 0) ? (
+                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                      <Calendar className="w-7 h-7 mb-2 opacity-30" />
+                      <p className="text-sm">No milk records in the last 7 days</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={milkTrend} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                        <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#6B7280' }} tickLine={false} axisLine={false} />
+                        <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} tickLine={false} axisLine={false} />
+                        <Tooltip contentStyle={{ borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '13px' }} formatter={(val: any) => [`${val} L`, 'Milk']} />
+                        <Line type="monotone" dataKey="production" stroke="#1E40AF" strokeWidth={2.5} dot={{ fill: '#1E40AF', r: 3, strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+
+              {/* Herd status pie */}
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <Activity className="w-4 h-4 text-[#16A34A]" />
+                  <h3 className="text-sm font-bold text-foreground">Herd Health Status</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">Current herd distribution by status</p>
+                <div className="h-[200px]">
+                  {summary.totalCattle === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                      <Users className="w-7 h-7 mb-2 opacity-30" />
+                      <p className="text-sm">No cattle records yet</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={summary.statusDistribution.filter((d) => d.value > 0)} cx="50%" cy="50%" labelLine={false} outerRadius={80} innerRadius={48} dataKey="value" stroke="none">
+                          {summary.statusDistribution.filter((d) => d.value > 0).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '13px' }} formatter={(val: any) => [`${val} cattle`, '']} />
+                        <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+
+              {/* Records by category bar - full width */}
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-sm md:col-span-2">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary" />
+                    <h3 className="text-sm font-bold text-foreground">Records by Category</h3>
+                  </div>
+                  <span className="text-xs font-semibold text-muted-foreground">{summary.totalRecords} total</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">Breakdown of all logged farm activity</p>
+                <div className="h-[200px]">
+                  {summary.totalRecords === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground">
+                      <FileText className="w-7 h-7 mb-2 opacity-30" />
+                      <p className="text-sm">No records logged yet</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={summary.recordsByType} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6B7280' }} tickLine={false} axisLine={false} />
+                        <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} tickLine={false} axisLine={false} />
+                        <Tooltip cursor={{ fill: '#F3F4F6' }} contentStyle={{ borderRadius: '10px', border: '1px solid #E5E7EB', fontSize: '13px' }} formatter={(val: any) => [`${val}`, 'Records']} />
+                        <Bar dataKey="count" fill="#1A5C2A" radius={[6, 6, 0, 0]} maxBarSize={56} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* 3. Health & Treatment */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-[15px] font-bold text-foreground">Health &amp; Treatment</h2>
+                <span className="text-xs text-muted-foreground font-semibold">{summary.healthCount} record{summary.healthCount !== 1 ? 's' : ''}</span>
+              </div>
+              {sickCattleList.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {sickCattleList.map((item) => (
+                    <div key={item.cattleId} className="bg-card border border-red-200 rounded-xl p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-semibold text-foreground">{item.name} &middot; <span className="font-normal text-muted-foreground">{item.breed}</span></span>
+                        <span className="text-xs text-destructive font-medium">{fmtDate(item.dateDetected)}</span>
+                      </div>
+                      {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
+                      {item.treatment && <p className="text-xs mt-1"><span className="font-medium">Treatment:</span> {item.treatment}</p>}
+                      {item.vetName && <p className="text-xs text-muted-foreground">Vet: {item.vetName}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {localRecordsByType.health.length > 0
+                ? <RecordList items={localRecordsByType.health} />
+                : sickCattleList.length === 0 && (
+                  <EmptyCard icon={CheckCircle2} message="No health records available" sub="Health records logged by attendants will appear here." />
+                )
+              }
+            </section>
+
+            {/* 4. Vaccination Records */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-[15px] font-bold text-foreground">Vaccination Records</h2>
+                <span className="text-xs text-muted-foreground font-semibold">{summary.vaccinationCount} record{summary.vaccinationCount !== 1 ? 's' : ''}</span>
+              </div>
+              {(vaccinationStatus.overdue.length > 0 || vaccinationStatus.upcoming.length > 0) && (
+                <div className="space-y-2 mb-3">
+                  {vaccinationStatus.overdue.map((item) => (
+                    <div key={item.id} className="bg-card border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between shadow-sm">
+                      <div><p className="text-sm font-semibold text-foreground">{item.cattleName}</p><p className="text-xs text-muted-foreground">{item.vaccineName}</p></div>
+                      <span className="text-xs font-semibold text-destructive bg-red-50 px-2 py-1 rounded-lg">Overdue</span>
+                    </div>
+                  ))}
+                  {vaccinationStatus.upcoming.map((item) => (
+                    <div key={item.id} className="bg-card border border-amber-200 rounded-xl px-4 py-3 flex items-center justify-between shadow-sm">
+                      <div><p className="text-sm font-semibold text-foreground">{item.cattleName}</p><p className="text-xs text-muted-foreground">{item.vaccineName}</p></div>
+                      <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg">Due {fmtDate(item.dueDate)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {localRecordsByType.vaccination.length > 0
+                ? <RecordList items={localRecordsByType.vaccination} />
+                : vaccinationStatus.overdue.length === 0 && vaccinationStatus.upcoming.length === 0 && (
+                  <EmptyCard icon={Syringe} message="No vaccination records available" sub="Vaccination records logged by attendants will appear here." />
+                )
+              }
+            </section>
+
+            {/* 5. Milk Production */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-[15px] font-bold text-foreground">Milk Production</h2>
+                <span className="text-xs text-muted-foreground font-semibold">{summary.milkCount} record{summary.milkCount !== 1 ? 's' : ''}</span>
+              </div>
+              {localRecordsByType.milk.length > 0 ? (
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                  <div className="divide-y divide-border">
+                    {localRecordsByType.milk.map((r) => {
+                      const liters = r.data?.liters || r.data?.quantity || parseFloat(r.notes?.match(/(\d+(\.\d+)?)/)?.[1] || '0') || null;
+                      return (
+                        <div key={r.id} className="px-4 py-3 flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-foreground truncate">
+                              {r.cattleName}
+                              {r.tagNumber && <span className="text-muted-foreground font-normal ml-1 text-xs">({r.tagNumber})</span>}
+                            </p>
+                            {liters ? (
+                              <p className="text-xs text-[#1E40AF] font-semibold mt-0.5">{liters} L</p>
+                            ) : r.notes ? (
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{r.notes}</p>
+                            ) : null}
+                          </div>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">{fmtDate(r.date)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <EmptyCard icon={TrendingUp} message="No milk production records available" sub="Milk production entries logged by attendants will appear here." />
+              )}
+            </section>
+
+            {/* 6. Breeding Records */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-[15px] font-bold text-foreground">Breeding Records</h2>
+                <span className="text-xs text-muted-foreground font-semibold">{summary.breedingCount} record{summary.breedingCount !== 1 ? 's' : ''}</span>
+              </div>
+              {localRecordsByType.breeding.length > 0
+                ? <RecordList items={localRecordsByType.breeding} />
+                : <EmptyCard icon={Calendar} message="No breeding records available" sub="Breeding records logged by attendants will appear here." />
+              }
+            </section>
+
+            {/* 7. Feeding Records */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-[15px] font-bold text-foreground">Feeding Records</h2>
+                <span className="text-xs text-muted-foreground font-semibold">{summary.feedingCount} record{summary.feedingCount !== 1 ? 's' : ''}</span>
+              </div>
+              {localRecordsByType.feeding.length > 0
+                ? <RecordList items={localRecordsByType.feeding} />
+                : <EmptyCard icon={FileText} message="No feeding records available" sub="Feeding records logged by attendants will appear here." />
+              }
+            </section>
+
+            {/* 8. Recent Activity */}
+            <section>
+              <h2 className="text-[15px] font-bold text-foreground mb-3">Recent Activity</h2>
+              {recentActivity.length > 0 ? (
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                  <div className="divide-y divide-border">
+                    {recentActivity.map((r) => (
+                      <div key={r.id} className="px-4 py-3 flex items-center gap-3">
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${recordTypeBadge[r.type] || 'bg-muted text-foreground'}`}>
+                          {recordTypeLabel[r.type] || r.type}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-foreground truncate">
+                            {r.cattleName}
+                            {r.tagNumber && <span className="text-muted-foreground font-normal ml-1 text-xs">({r.tagNumber})</span>}
+                          </p>
+                          {r.notes && <p className="text-xs text-muted-foreground truncate">{r.notes}</p>}
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">{fmtDate(r.date)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <EmptyCard icon={Activity} message="No recent activity" sub="Farm activity logged by attendants will appear here." />
+              )}
+            </section>
+
           </>
         ) : null}
       </div>
