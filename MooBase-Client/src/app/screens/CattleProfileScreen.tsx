@@ -129,6 +129,37 @@ export function CattleProfileScreen() {
     }
   };
 
+  const getVaccineMedicine = (rec: CattleRecord) => {
+    if (rec.data?.vaccineName) return rec.data.vaccineName;
+    if (typeof rec.data === 'string') {
+      try {
+        const parsed = JSON.parse(rec.data);
+        if (parsed?.vaccineName) return parsed.vaccineName;
+      } catch (e) {}
+    }
+    if (rec.notes && rec.notes.startsWith('Vaccine administered: ')) {
+      return rec.notes.replace('Vaccine administered: ', '').trim();
+    }
+    return null;
+  };
+
+  const getVaccineObservation = (rec: CattleRecord, med: string | null) => {
+    if (rec.data?.observation) return rec.data.observation;
+    if (typeof rec.data === 'string') {
+      try {
+        const parsed = JSON.parse(rec.data);
+        if (parsed?.observation) return parsed.observation;
+      } catch (e) {}
+    }
+    if (rec.notes) {
+      if (med && rec.notes === `Vaccine administered: ${med}`) {
+        return 'Administered without adverse reactions noted';
+      }
+      return rec.notes;
+    }
+    return 'No specific observation recorded';
+  };
+
   return (
     <div className="min-h-screen bg-background pb-12 flex flex-col font-sans">
       {/* Top Green Banner */}
@@ -296,50 +327,102 @@ export function CattleProfileScreen() {
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {filteredRecords.map((record) => (
-                  <button
-                    key={record.id}
-                    onClick={() => navigate(`/records/edit/${record.id}`)}
-                    className="w-full px-4 sm:px-5 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors text-left group cursor-pointer"
-                  >
-                    <div className="flex items-start gap-3.5 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center flex-shrink-0 mt-0.5 text-foreground">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold text-foreground capitalize group-hover:text-primary transition-colors">
-                            {record.type} Log
-                          </h4>
-                          {!record.synced && (
-                            <span className="px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold">
-                              Local / Unsynced
-                            </span>
+                {filteredRecords.map((record) => {
+                  const isVaccination = record.type === 'vaccination';
+                  const vaccineMedicine = isVaccination ? getVaccineMedicine(record) : null;
+                  const vaccineObservation = isVaccination ? getVaccineObservation(record, vaccineMedicine) : null;
+                  const formattedDate = new Date(record.date).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  });
+
+                  return (
+                    <button
+                      key={record.id}
+                      onClick={() => navigate(`/records/edit/${record.id}`)}
+                      className="w-full px-4 sm:px-5 py-4 flex items-start justify-between hover:bg-muted/30 transition-colors text-left group cursor-pointer"
+                    >
+                      <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                        <div
+                          className={`w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                            isVaccination
+                              ? 'bg-amber-500/10 border-amber-500/20 text-amber-700'
+                              : 'bg-muted border-border text-foreground'
+                          }`}
+                        >
+                          {isVaccination ? (
+                            <Syringe className="w-4 h-4 text-amber-600" />
+                          ) : (
+                            <Calendar className="w-4 h-4 text-muted-foreground" />
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                          {record.notes}
-                        </p>
-                        {record.data && typeof record.data === 'object' && record.data.liters && (
-                          <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[11px] font-bold border border-blue-200">
-                            🥛 {record.data.liters} Liters
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                        <div className="min-w-0 space-y-1.5 flex-1 pr-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-bold text-foreground capitalize group-hover:text-primary transition-colors">
+                              {isVaccination ? 'Vaccination Record' : `${record.type} Log`}
+                            </h4>
+                            {!record.synced && (
+                              <span className="px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold">
+                                Local / Unsynced
+                              </span>
+                            )}
+                          </div>
 
-                    <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                      <span className="text-xs font-mono font-semibold text-muted-foreground">
-                        {new Date(record.date).toLocaleDateString(undefined, {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  </button>
-                ))}
+                          {isVaccination ? (
+                            <div className="space-y-1.5">
+                              {/* Medicine Vaccinated */}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 text-amber-800 dark:text-amber-300 border border-amber-500/25 rounded-lg text-xs font-bold shadow-2xs">
+                                  <Syringe className="w-3.5 h-3.5 text-amber-600" />
+                                  <span>Medicine: {vaccineMedicine || 'Vaccine Administered'}</span>
+                                </span>
+                              </div>
+
+                              {/* Observation */}
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                <span className="font-semibold text-foreground">Observation:</span>{' '}
+                                {vaccineObservation}
+                              </p>
+
+                              {/* Date of Vaccination */}
+                              <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5 text-primary" />
+                                <span className="font-semibold text-foreground">Date of Vaccination:</span>{' '}
+                                <span className="font-mono font-semibold text-foreground/90">{formattedDate}</span>
+                              </p>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                {record.notes}
+                              </p>
+                              {record.data && typeof record.data === 'object' && record.data.liters && (
+                                <span className="inline-block mt-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[11px] font-bold border border-blue-200">
+                                  🥛 {record.data.liters} Liters
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 flex-shrink-0 ml-3 pt-1">
+                        <div className="text-right">
+                          {isVaccination && (
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                              Vaccinated
+                            </span>
+                          )}
+                          <span className="text-xs font-mono font-semibold text-muted-foreground">
+                            {formattedDate}
+                          </span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>

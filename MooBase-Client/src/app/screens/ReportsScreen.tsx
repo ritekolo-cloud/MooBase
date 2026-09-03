@@ -614,12 +614,90 @@ export function ReportsScreen() {
                   ))}
                 </div>
               )}
-              {localRecordsByType.vaccination.length > 0
-                ? <RecordList items={localRecordsByType.vaccination} />
-                : vaccinationStatus.overdue.length === 0 && vaccinationStatus.upcoming.length === 0 && (
-                  <EmptyCard icon={Syringe} message="No vaccination records available" sub="Vaccination records logged by attendants will appear here." />
+              {localRecordsByType.vaccination.length > 0 ? (
+                <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                  <div className="divide-y divide-border">
+                    {localRecordsByType.vaccination.map((r: any) => {
+                      const vaccineMedicine =
+                        r.data?.vaccineName ||
+                        (typeof r.data === 'string'
+                          ? (() => {
+                              try {
+                                return JSON.parse(r.data)?.vaccineName;
+                              } catch (e) {
+                                return null;
+                              }
+                            })()
+                          : null) ||
+                        (r.notes?.startsWith('Vaccine administered: ')
+                          ? r.notes.replace('Vaccine administered: ', '').trim()
+                          : null);
+                      const observation =
+                        r.data?.observation ||
+                        (typeof r.data === 'string'
+                          ? (() => {
+                              try {
+                                return JSON.parse(r.data)?.observation;
+                              } catch (e) {
+                                return null;
+                              }
+                            })()
+                          : null) ||
+                        (vaccineMedicine && r.notes === `Vaccine administered: ${vaccineMedicine}`
+                          ? 'Standard administration logged'
+                          : r.notes || 'No observation recorded');
+
+                      return (
+                        <div key={r.id} className="px-4 sm:px-5 py-3.5 flex items-start justify-between gap-3">
+                          <div className="min-w-0 space-y-1.5 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-foreground truncate">
+                                {r.cattleName}
+                                {r.tagNumber && (
+                                  <span className="text-muted-foreground font-normal ml-1 text-xs">
+                                    ({r.tagNumber})
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-500/10 text-amber-800 dark:text-amber-300 rounded-md text-xs font-bold border border-amber-500/25">
+                                <Syringe className="w-3 h-3 text-amber-600" />
+                                <span>Medicine: {vaccineMedicine || 'Vaccine Administered'}</span>
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              <span className="font-semibold text-foreground">Observation:</span> {observation}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-primary" />
+                              <span className="font-semibold text-foreground">Date of Vaccination:</span>{' '}
+                              <span className="font-mono font-semibold text-foreground/90">{fmtDate(r.date)}</span>
+                            </p>
+                          </div>
+                          <div className="text-right flex-shrink-0 pt-0.5">
+                            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground block">
+                              Vaccinated
+                            </span>
+                            <span className="text-xs text-muted-foreground whitespace-nowrap font-mono font-semibold">
+                              {fmtDate(r.date)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                vaccinationStatus.overdue.length === 0 &&
+                vaccinationStatus.upcoming.length === 0 && (
+                  <EmptyCard
+                    icon={Syringe}
+                    message="No vaccination records available"
+                    sub="Vaccination records logged by attendants will appear here."
+                  />
                 )
-              }
+              )}
             </section>
 
             {/* 5. Milk Production */}

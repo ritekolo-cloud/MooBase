@@ -28,13 +28,14 @@ export function AddRecordScreen() {
   );
   const [notes, setNotes] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [vaccineName, setVaccineName] = useState('');
   const [additionalData, setAdditionalData] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const cattle = storage.getCattle();
 
   const recordTypes: { value: CattleRecord['type']; label: string; icon: any; colorClass: string }[] = [
-    { value: 'health', label: 'Health & Illness', icon: HeartPulse, colorClass: 'text-destructive' },
+    { value: 'health', label: 'Health or Illness', icon: HeartPulse, colorClass: 'text-destructive' },
     { value: 'vaccination', label: 'Vaccination', icon: Syringe, colorClass: 'text-accent' },
     { value: 'milk', label: 'Milk Production', icon: Milk, colorClass: 'text-secondary' },
     { value: 'breeding', label: 'Breeding & AI', icon: HeartHandshake, colorClass: 'text-primary' },
@@ -47,10 +48,16 @@ export function AddRecordScreen() {
       if (record) {
         setCattleId(record.cattleId);
         setRecordType(record.type);
-        setNotes(record.notes);
+        setNotes(record.notes || '');
         setDate(record.date.split('T')[0]);
         if (record.data) {
           setAdditionalData(JSON.stringify(record.data));
+          if (record.data.vaccineName) {
+            setVaccineName(record.data.vaccineName);
+          }
+        }
+        if (record.type === 'vaccination' && !record.data?.vaccineName && record.notes?.startsWith('Vaccine administered: ')) {
+          setVaccineName(record.notes.replace('Vaccine administered: ', ''));
         }
       }
     }
@@ -59,14 +66,31 @@ export function AddRecordScreen() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!cattleId || !notes) {
-      toast.error('Please select an animal and enter notes');
+    if (!cattleId) {
+      toast.error('Please select an animal');
+      return;
+    }
+
+    if (recordType === 'vaccination' && !vaccineName.trim()) {
+      toast.error('Please enter the medicine / vaccine name');
+      return;
+    }
+
+    if (!notes.trim()) {
+      toast.error(recordType === 'vaccination' ? 'Please enter clinical observation or notes' : 'Please enter notes');
       return;
     }
 
     setIsSaving(true);
     const token = localStorage.getItem('moobase_access_token');
-    const dataPayload = additionalData ? JSON.parse(additionalData) : undefined;
+    let dataPayload = additionalData ? JSON.parse(additionalData) : {};
+    if (recordType === 'vaccination') {
+      dataPayload = {
+        ...(dataPayload || {}),
+        vaccineName: vaccineName.trim(),
+        observation: notes.trim(),
+      };
+    }
     const recordDate = new Date(date).toISOString();
 
     if (isEditMode && id) {
@@ -74,7 +98,7 @@ export function AddRecordScreen() {
         cattleId,
         type: recordType,
         date: recordDate,
-        notes,
+        notes: notes.trim(),
         data: dataPayload,
       };
 
@@ -88,7 +112,7 @@ export function AddRecordScreen() {
             bodyPayload.treatment = dataPayload?.treatment || 'General Checkup';
             bodyPayload.vetName = dataPayload?.vetName || user?.name || 'Attendant';
           } else if (recordType === 'vaccination') {
-            bodyPayload.vaccineName = dataPayload?.vaccineName || notes;
+            bodyPayload.vaccineName = vaccineName.trim() || dataPayload?.vaccineName || notes;
             bodyPayload.dateAdministered = recordDate;
             bodyPayload.nextDueDate = dataPayload?.nextDueDate || new Date(Date.now() + 180 * 86400000).toISOString();
           } else if (recordType === 'milk') {
@@ -139,7 +163,7 @@ export function AddRecordScreen() {
         cattleId,
         type: recordType,
         date: recordDate,
-        notes,
+        notes: notes.trim(),
         synced: false,
         createdBy: user?.id || 'unknown',
         data: dataPayload,
@@ -159,7 +183,7 @@ export function AddRecordScreen() {
             bodyPayload.treatment = dataPayload?.treatment || 'General Checkup';
             bodyPayload.vetName = dataPayload?.vetName || user?.name || 'Attendant';
           } else if (recordType === 'vaccination') {
-            bodyPayload.vaccineName = dataPayload?.vaccineName || notes;
+            bodyPayload.vaccineName = vaccineName.trim() || dataPayload?.vaccineName || notes;
             bodyPayload.dateAdministered = recordDate;
             bodyPayload.nextDueDate = dataPayload?.nextDueDate || new Date(Date.now() + 180 * 86400000).toISOString();
           } else if (recordType === 'milk') {
@@ -324,12 +348,12 @@ export function AddRecordScreen() {
           {/* Record Details Card */}
           <div className="bg-card border border-border rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
             <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              3. Activity Details & Date
+              {recordType === 'vaccination' ? '3. Vaccination Details & Date' : '3. Activity Details & Date'}
             </h2>
             
             <div>
               <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
-                Activity Date <span className="text-destructive">*</span>
+                {recordType === 'vaccination' ? 'Date of Vaccination' : 'Activity Date'} <span className="text-destructive">*</span>
               </label>
               <input
                 type="date"
@@ -340,6 +364,22 @@ export function AddRecordScreen() {
                 className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
               />
             </div>
+
+            {recordType === 'vaccination' && (
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
+                  Medicine / Vaccine Administered <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Anthrax Vaccine, FMD Vaccine, Ivermectin, Penicillin..."
+                  value={vaccineName}
+                  onChange={(e) => setVaccineName(e.target.value)}
+                  required
+                  className="w-full h-11 px-4 bg-background border border-border rounded-xl text-sm font-semibold text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
+                />
+              </div>
+            )}
 
             {recordType === 'milk' && (
               <div>
@@ -361,14 +401,18 @@ export function AddRecordScreen() {
 
             <div>
               <label className="block text-xs font-bold text-foreground mb-1.5 uppercase tracking-wide">
-                Notes & Clinical Observations <span className="text-destructive">*</span>
+                {recordType === 'vaccination' ? 'Observation & Clinical Notes' : 'Notes & Clinical Observations'} <span className="text-destructive">*</span>
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 required
                 rows={4}
-                placeholder="Enter detailed observations, dosage, follow-up recommendations, or feed type..."
+                placeholder={
+                  recordType === 'vaccination'
+                    ? 'Enter clinical observation (e.g. normal reaction, site clean, dosage given, follow-up remarks)...'
+                    : 'Enter detailed observations, dosage, follow-up recommendations, or feed type...'
+                }
                 className="w-full p-4 bg-background border border-border rounded-xl text-sm font-medium text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all resize-none"
               />
             </div>
